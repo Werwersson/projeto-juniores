@@ -3,12 +3,9 @@
 
 {% block content %}
 
-{# Topbar #}
 <div class="tk-topbar">
   <div>
-    <div class="tk-page-title">
-      Olá, {{ current_user.name.split()[0] }}! 👋
-    </div>
+    <div class="tk-page-title">Olá, {{ current_user.name.split()[0] }}! 👋</div>
     <div class="tk-page-subtitle">Visão geral de todos os PGMs</div>
   </div>
   <span class="tk-badge tk-badge-supervisor">
@@ -16,7 +13,14 @@
   </span>
 </div>
 
-{# Stats globais #}
+{# Stats globais — calculados no lado do servidor via Jinja #}
+{% set total_juniors = [] %}
+{% set total_leaders = [] %}
+{% for pgm in pgms %}
+  {% for j in pgm.juniors %}{% if total_juniors.append(j) %}{% endif %}{% endfor %}
+  {% for l in pgm.leaders %}{% if total_leaders.append(l) %}{% endif %}{% endfor %}
+{% endfor %}
+
 <div class="row g-3 mb-4">
   <div class="col-6 col-md-3">
     <div class="tk-stat tk-stat-purple">
@@ -28,18 +32,14 @@
   <div class="col-6 col-md-3">
     <div class="tk-stat tk-stat-cyan">
       <div class="tk-stat-label">Juniores</div>
-      <div class="tk-stat-value">
-        {{ pgms | sum(attribute='juniors') | list | length if pgms else 0 }}
-      </div>
+      <div class="tk-stat-value">{{ total_juniors | length }}</div>
       <div class="tk-stat-sub">crianças cadastradas</div>
     </div>
   </div>
   <div class="col-6 col-md-3">
     <div class="tk-stat tk-stat-green">
       <div class="tk-stat-label">Líderes</div>
-      <div class="tk-stat-value">
-        {{ pgms | sum(attribute='leaders') | list | length if pgms else 0 }}
-      </div>
+      <div class="tk-stat-value">{{ total_leaders | length }}</div>
       <div class="tk-stat-sub">líderes ativos</div>
     </div>
   </div>
@@ -68,7 +68,6 @@
 </div>
 
 <div class="row g-3 mb-4">
-  {% set grad_colors = ['purple', 'cyan', 'green'] %}
   {% for pgm in pgms %}
   <div class="col-12 col-md-4">
     <div class="tk-pgm-card">
@@ -86,7 +85,6 @@
       </div>
       <div class="tk-pgm-body">
 
-        {# Líderes do grupo #}
         <div style="font-size:0.7rem; font-weight:800; letter-spacing:1px; text-transform:uppercase; color:var(--text-muted); margin-bottom:10px;">
           Líderes
         </div>
@@ -101,12 +99,12 @@
         <span style="font-size:0.8rem; color:var(--text-muted);">Sem líderes cadastrados</span>
         {% endfor %}
 
-        {# Juniores — top 3 com saldo #}
         {% if pgm.juniors %}
         <div style="font-size:0.7rem; font-weight:800; letter-spacing:1px; text-transform:uppercase; color:var(--text-muted); margin: 14px 0 10px;">
           Destaques
         </div>
-        {% for junior in pgm.juniors[:3] %}
+        {% set juniors_sorted = pgm.juniors | sort(attribute='balance.total_balance', reverse=True) %}
+        {% for junior in juniors_sorted[:3] %}
         <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
           <div style="display:flex; align-items:center; gap:8px;">
             <div class="tk-avatar av-junior" style="width:26px; height:26px; font-size:0.7rem;">

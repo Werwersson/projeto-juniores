@@ -3,6 +3,10 @@
 
 {% block content %}
 
+{% set done_count = already_done_ids | length %}
+{% set total = activities | length %}
+{% set pct = ((done_count * 100 // total) if total > 0 else 0) %}
+
 <div class="tk-topbar">
   <div>
     <div class="tk-page-title">Checklist de hoje</div>
@@ -14,27 +18,8 @@
 </div>
 
 {# Contadores ocultos usados pelo JS de celebração #}
-{% set done_count = already_done_ids | length %}
-{% set total = activities | length %}
-<span id="tk-done-count"  style="display:none;">{{ done_count }}</span>
+<span id="tk-done-count" style="display:none;">{{ done_count }}</span>
 <span id="tk-total-atividades" style="display:none;">{{ total }}</span>
-
-{# Overlay de celebração completa (aparece via JS) #}
-<div id="tk-celebracao" style="display:none; position:fixed; inset:0; z-index:9998;
-     background:rgba(0,0,0,0.7); backdrop-filter:blur(4px);
-     align-items:center; justify-content:center; flex-direction:column; gap:16px;">
-  <div style="font-size:5rem; animation:tkpulse 0.6s ease infinite alternate;">🏆</div>
-  <div style="font-size:1.6rem; font-weight:900; color:#fff; text-align:center; padding:0 24px;">
-    Missão cumprida!
-  </div>
-  <div style="font-size:0.95rem; color:rgba(255,255,255,0.7); font-weight:700;">
-    Você completou todas as atividades de hoje!
-  </div>
-  <button onclick="document.getElementById('tk-celebracao').style.display='none'"
-          class="tk-btn tk-btn-purple" style="margin-top:8px;">
-    Fechar <i class="bi bi-x-lg"></i>
-  </button>
-</div>
 
 <div class="row g-4">
   <div class="col-12 col-lg-7">
@@ -52,7 +37,7 @@
             <input type="hidden" name="premiles" value="{{ activity.default_premiles or 10 }}" />
             <button type="submit"
                     class="tk-check-item {% if is_done %}done{% endif %}"
-                    style="width:100%; text-align:left; background:none; cursor:{% if is_done %}default{% else %}pointer{% endif %};"
+                    style="width:100%; text-align:left; background:none;"
                     {% if is_done %}disabled{% endif %}
                     data-premiles="{{ activity.default_premiles or 10 }}">
               <div class="tk-check-circle">
@@ -81,7 +66,8 @@
       {% else %}
         <div style="text-align:center; padding:30px; color:var(--text-muted); font-weight:600;">
           <i class="bi bi-clipboard-check" style="font-size:2rem; display:block; margin-bottom:8px;"></i>
-          Nenhuma atividade disponível no momento.
+          Nenhuma atividade disponível no momento.<br>
+          <small style="font-size:0.78rem;">Peça ao seu líder para cadastrar as atividades.</small>
         </div>
       {% endif %}
     </div>
@@ -101,6 +87,7 @@
       </ul>
     </div>
 
+    {% if total > 0 %}
     <div class="tk-card" style="border-color:rgba(249,115,22,0.25); margin-top:12px;">
       <div style="font-size:0.7rem; font-weight:800; letter-spacing:1px;
                   text-transform:uppercase; color:var(--text-muted); margin-bottom:12px;">
@@ -117,12 +104,10 @@
       <div style="background:var(--bg-card2); border-radius:20px; height:8px; overflow:hidden;">
         <div id="tk-progress-fill"
              style="height:8px; border-radius:20px; background:var(--grad-green);
-                    width:{{ ((done_count / total * 100) if total else 0) | int }}%;
-                    transition:width 0.5s ease;">
+                    width:{{ pct }}%; transition:width 0.5s ease;">
         </div>
       </div>
 
-      {# Badge de conclusão total #}
       {% if done_count == total and total > 0 %}
       <div style="margin-top:14px; padding:10px 14px; background:rgba(16,185,129,0.1);
                   border:1px solid rgba(16,185,129,0.3); border-radius:var(--radius-sm);
@@ -131,6 +116,7 @@
       </div>
       {% endif %}
     </div>
+    {% endif %}
 
     {# Card de notificação push #}
     <div id="card-notif" class="tk-card" style="margin-top:12px; border-color:rgba(6,182,212,0.25); display:none;">
@@ -155,69 +141,30 @@
 {% block scripts %}
 <script src="{{ url_for('static', filename='js/checklist.js') }}"></script>
 <script>
-// ── Notificações push via Service Worker ──────────────
 async function ativarNotificacoes() {
-  if (!('Notification' in window)) {
-    alert('Seu navegador não suporta notificações.');
-    return;
-  }
-  const permissao = await Notification.requestPermission();
-  if (permissao === 'granted') {
-    agendarLembrete();
-    document.getElementById('btn-ativar-notif').textContent = '✅ Lembretes ativados!';
-    document.getElementById('btn-ativar-notif').disabled = true;
-    localStorage.setItem('tk_notif', '1');
-  }
-}
-
-function agendarLembrete() {
-  // Lembrete diário às 20h via setTimeout até meia-noite
-  const agora = new Date();
-  const lembrete = new Date();
-  lembrete.setHours(20, 0, 0, 0);
-  if (lembrete <= agora) lembrete.setDate(lembrete.getDate() + 1);
-
-  const diff = lembrete - agora;
-  setTimeout(function() {
-    new Notification('TeoK!ds. 🌟', {
-      body: 'Não esqueça de marcar seu checklist hoje!',
-      icon: '/static/img/icon-192.png',
-      tag: 'checklist-lembrete'
-    });
-    // Reagenda para o dia seguinte
-    setInterval(function() {
-      new Notification('TeoK!ds. 🌟', {
-        body: 'Não esqueça de marcar seu checklist hoje!',
-        icon: '/static/img/icon-192.png',
-        tag: 'checklist-lembrete'
-      });
-    }, 24 * 60 * 60 * 1000);
-  }, diff);
-}
-
-// Mostra card de notificação se suportado e não ativado
-document.addEventListener('DOMContentLoaded', function() {
-  if ('Notification' in window && Notification.permission !== 'granted') {
-    if (!localStorage.getItem('tk_notif')) {
-      document.getElementById('card-notif').style.display = 'block';
-    }
-  } else if (localStorage.getItem('tk_notif')) {
+  if (!('Notification' in window)) { alert('Seu navegador não suporta notificações.'); return; }
+  const p = await Notification.requestPermission();
+  if (p === 'granted') {
     const btn = document.getElementById('btn-ativar-notif');
-    if (btn) { btn.textContent = '✅ Lembretes ativados!'; btn.disabled = true; }
+    btn.textContent = '✅ Lembretes ativados!';
+    btn.disabled = true;
+    localStorage.setItem('tk_notif', '1');
+    const agora = new Date();
+    const lembrete = new Date();
+    lembrete.setHours(20, 0, 0, 0);
+    if (lembrete <= agora) lembrete.setDate(lembrete.getDate() + 1);
+    setTimeout(function() {
+      new Notification('TeoK!ds. 🌟', { body: 'Não esqueça de marcar seu checklist hoje!' });
+    }, lembrete - agora);
+  }
+}
+document.addEventListener('DOMContentLoaded', function() {
+  if ('Notification' in window && Notification.permission !== 'granted' && !localStorage.getItem('tk_notif')) {
     document.getElementById('card-notif').style.display = 'block';
   }
 });
-
-// Celebração overlay se todas já concluídas ao carregar
-{% if done_count == total and total > 0 and request.method == 'GET' %}
-// já veio completo do server — não mostra de novo
-{% endif %}
 </script>
-
 <style>
-@keyframes tkpulse {
-  from { transform: scale(1); }
-  to   { transform: scale(1.15); }
-}
+@keyframes tkpulse { from { transform:scale(1); } to { transform:scale(1.15); } }
 </style>
 {% endblock %}

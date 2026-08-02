@@ -39,8 +39,8 @@ def login():
         if user and user.check_password(password):
             login_user(user, remember=remember)
 
-            # Força troca de senha se ainda estiver com a senha padrão
-            if user.check_password(SENHA_PADRAO):
+            # Força troca de senha padrão
+            if password == SENHA_PADRAO:
                 session["force_password_change"] = True
                 flash("Por segurança, defina uma nova senha antes de continuar.", "warning")
                 return redirect(url_for("auth.trocar_senha"))
@@ -73,18 +73,22 @@ def trocar_senha():
         nova_senha = request.form.get("nova_senha", "")
         confirmar = request.form.get("confirmar", "")
 
+        # Valida senha atual
         if not current_user.check_password(senha_atual):
             flash("Senha atual incorreta.", "danger")
             return render_template("auth/trocar_senha.html", force=force)
 
+        # Valida tamanho
         if len(nova_senha) < 6:
             flash("A nova senha deve ter ao menos 6 caracteres.", "danger")
             return render_template("auth/trocar_senha.html", force=force)
 
+        # Valida confirmação
         if nova_senha != confirmar:
             flash("As senhas não coincidem.", "danger")
             return render_template("auth/trocar_senha.html", force=force)
 
+        # Bloqueia reutilização da senha padrão
         if nova_senha == SENHA_PADRAO:
             flash("Escolha uma senha diferente da senha padrão.", "danger")
             return render_template("auth/trocar_senha.html", force=force)
