@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+{% block title %}Ranking — TeoK!ds.{% endblock %}
+
+{% block content %}
+
+<div class="tk-topbar">
+  <div>
+    <div class="tk-page-title">Ranking de Premiles</div>
+    <div class="tk-page-subtitle">{{ juniors | length }} juniores • ordenados por saldo</div>
+  </div>
+</div>
+
+{# Filtro por PGM #}
+{% if pgms | length > 1 %}
+<div style="display:flex; gap:8px; margin-bottom:20px; flex-wrap:wrap;">
+  <button class="tk-btn tk-btn-ghost tk-btn-sm filtro-btn active" data-pgm="todos">
+    Todos os grupos
+  </button>
+  {% for pgm in pgms %}
+  <button class="tk-btn tk-btn-ghost tk-btn-sm filtro-btn" data-pgm="{{ pgm.id }}">
+    {{ pgm.name }}
+  </button>
+  {% endfor %}
+</div>
+{% endif %}
+
+{# Pódio — top 3 #}
+{% if juniors | length >= 3 %}
+<div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; margin-bottom:28px; align-items:end;">
+
+  {# 2º lugar #}
+  <div class="tk-card" style="text-align:center; border-color:rgba(156,163,175,0.3);"
+       data-pgm-id="{{ juniors[1].pgm_id }}">
+    <div style="font-size:2rem; margin-bottom:6px;">🥈</div>
+    <div class="tk-avatar av-junior" style="width:44px; height:44px; font-size:1.1rem; margin:0 auto 8px;">
+      {{ juniors[1].name[0].upper() }}
+    </div>
+    <div style="font-weight:800; font-size:0.9rem;">{{ juniors[1].name.split()[0] }}</div>
+    <div style="font-size:0.72rem; color:var(--text-muted); font-weight:600; margin:3px 0 8px;">
+      {{ juniors[1].pgm.name if juniors[1].pgm else '—' }}
+    </div>
+    <div style="font-size:1.4rem; font-weight:900; color:#9ca3af;">
+      ⭐ {{ juniors[1].balance.total_balance if juniors[1].balance else 0 }}
+    </div>
+  </div>
+
+  {# 1º lugar — maior #}
+  <div class="tk-card" style="text-align:center; border-color:rgba(251,191,36,0.4);
+       box-shadow: 0 0 0 1px rgba(251,191,36,0.2), 0 8px 32px rgba(251,191,36,0.1);"
+       data-pgm-id="{{ juniors[0].pgm_id }}">
+    <div style="font-size:2.5rem; margin-bottom:6px;">👑</div>
+    <div class="tk-avatar av-junior" style="width:52px; height:52px; font-size:1.3rem; margin:0 auto 8px;
+         box-shadow:0 0 0 3px rgba(251,191,36,0.4);">
+      {{ juniors[0].name[0].upper() }}
+    </div>
+    <div style="font-weight:900; font-size:1rem;">{{ juniors[0].name.split()[0] }}</div>
+    <div style="font-size:0.72rem; color:var(--text-muted); font-weight:600; margin:3px 0 8px;">
+      {{ juniors[0].pgm.name if juniors[0].pgm else '—' }}
+    </div>
+    <div style="font-size:1.7rem; font-weight:900; color:#fbbf24;">
+      ⭐ {{ juniors[0].balance.total_balance if juniors[0].balance else 0 }}
+    </div>
+  </div>
+
+  {# 3º lugar #}
+  <div class="tk-card" style="text-align:center; border-color:rgba(180,120,60,0.3);"
+       data-pgm-id="{{ juniors[2].pgm_id }}">
+    <div style="font-size:2rem; margin-bottom:6px;">🥉</div>
+    <div class="tk-avatar av-junior" style="width:44px; height:44px; font-size:1.1rem; margin:0 auto 8px;">
+      {{ juniors[2].name[0].upper() }}
+    </div>
+    <div style="font-weight:800; font-size:0.9rem;">{{ juniors[2].name.split()[0] }}</div>
+    <div style="font-size:0.72rem; color:var(--text-muted); font-weight:600; margin:3px 0 8px;">
+      {{ juniors[2].pgm.name if juniors[2].pgm else '—' }}
+    </div>
+    <div style="font-size:1.4rem; font-weight:900; color:#b47c3c;">
+      ⭐ {{ juniors[2].balance.total_balance if juniors[2].balance else 0 }}
+    </div>
+  </div>
+
+</div>
+{% endif %}
+
+{# Lista completa #}
+<div class="tk-card">
+  <div style="font-size:0.72rem; font-weight:800; letter-spacing:1px; text-transform:uppercase;
+              color:var(--text-muted); margin-bottom:16px;">
+    Classificação completa
+  </div>
+
+  <table class="tk-table" id="tabela-ranking">
+    <thead>
+      <tr>
+        <th style="width:48px;">#</th>
+        <th>Júnior</th>
+        <th>PGM</th>
+        <th>Premiles</th>
+        <th>Barra</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% set max_pts = juniors[0].balance.total_balance if juniors and juniors[0].balance else 1 %}
+      {% for junior in juniors %}
+      {% set saldo = junior.balance.total_balance if junior.balance else 0 %}
+      {% set pct = ((saldo / max_pts) * 100) | int if max_pts > 0 else 0 %}
+      <tr data-pgm-id="{{ junior.pgm_id }}">
+        <td>
+          {% if loop.index == 1 %}👑
+          {% elif loop.index == 2 %}🥈
+          {% elif loop.index == 3 %}🥉
+          {% else %}
+          <span style="font-size:0.85rem; color:var(--text-muted); font-weight:700;">
+            {{ loop.index }}
+          </span>
+          {% endif %}
+        </td>
+        <td>
+          <div style="display:flex; align-items:center; gap:10px;">
+            <div class="tk-avatar av-junior">{{ junior.name[0].upper() }}</div>
+            <span style="font-weight:700;">{{ junior.name }}</span>
+          </div>
+        </td>
+        <td style="font-size:0.83rem; color:var(--text-muted); font-weight:600;">
+          {{ junior.pgm.name if junior.pgm else '—' }}
+        </td>
+        <td>
+          <span class="tk-premiles">⭐ {{ saldo }}</span>
+        </td>
+        <td style="width:140px;">
+          <div style="background:var(--bg-card2); border-radius:20px; height:6px; overflow:hidden;">
+            <div style="height:6px; border-radius:20px; width:{{ pct }}%;
+                        background:{% if loop.index == 1 %}linear-gradient(90deg,#f59e0b,#fbbf24)
+                                   {% elif loop.index == 2 %}linear-gradient(90deg,#6b7280,#9ca3af)
+                                   {% elif loop.index == 3 %}linear-gradient(90deg,#92400e,#b47c3c)
+                                   {% else %}var(--grad-purple){% endif %};
+                        transition:width .4s ease;">
+            </div>
+          </div>
+        </td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="5" style="text-align:center; padding:40px; color:var(--text-muted); font-weight:600;">
+          Nenhum júnior cadastrado ainda.
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.querySelectorAll('.filtro-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.filtro-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const pgm = btn.dataset.pgm;
+
+    // Filtra tabela
+    document.querySelectorAll('#tabela-ranking tbody tr[data-pgm-id]').forEach(row => {
+      row.style.display = (pgm === 'todos' || row.dataset.pgmId === pgm) ? '' : 'none';
+    });
+
+    // Filtra pódio
+    document.querySelectorAll('[data-pgm-id]').forEach(el => {
+      if (el.tagName === 'TR') return;
+      el.style.display = (pgm === 'todos' || el.dataset.pgmId === pgm) ? '' : 'none';
+    });
+  });
+});
+</script>
+{% endblock %}

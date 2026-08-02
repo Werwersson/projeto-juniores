@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Página não encontrada — TeoK!ds.{% endblock %}
+{% block content %}
+<div style="min-height:70vh; display:flex; align-items:center; justify-content:center;">
+  <div style="text-align:center; max-width:380px;">
+    <div style="font-size:5rem; margin-bottom:16px;">🔍</div>
+    <div style="font-size:4rem; font-weight:900; letter-spacing:-2px;
+                background:linear-gradient(135deg,#00e5a0,#00bfff);
+                -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+                background-clip:text; line-height:1; margin-bottom:12px;">404</div>
+    <div style="font-size:1.1rem; font-weight:800; color:#fff; margin-bottom:8px;">
+      Página não encontrada
+    </div>
+    <div style="font-size:0.88rem; color:var(--text-muted); font-weight:600; line-height:1.6; margin-bottom:24px;">
+      Esta página não existe ou foi movida.
+      Verifique o endereço ou volte ao início.
+    </div>
+    <a href="{{ url_for('auth.index') }}" class="tk-btn tk-btn-purple">
+      <i class="bi bi-house-fill"></i> Ir para o início
+    </a>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}Início — {{ current_user.name }}{% endblock %}
+
+{% block content %}
+
+{# Saudação #}
+<div class="tk-topbar" style="margin-bottom:24px;">
+  <div>
+    <div class="tk-page-title">Olá, {{ current_user.name.split()[0] }}! 🎉</div>
+    <div class="tk-page-subtitle">
+      {{ current_user.pgm.name if current_user.pgm else 'Seu PGM' }}
+    </div>
+  </div>
+  <span class="tk-badge tk-badge-junior">
+    <i class="bi bi-star-fill me-1"></i> Júnior
+  </span>
+</div>
+
+{# Saldo em destaque #}
+<div class="tk-card mb-4" style="background:var(--bg-card); border-color:rgba(249,115,22,0.3); position:relative; overflow:hidden;">
+  <div style="position:absolute; top:-40px; right:-40px; width:180px; height:180px; border-radius:50%;
+              background: radial-gradient(circle, rgba(249,115,22,0.15) 0%, transparent 70%); pointer-events:none;"></div>
+  <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px;">
+    <div>
+      <div style="font-size:0.7rem; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:var(--text-muted); margin-bottom:8px;">
+        Meus Premiles
+      </div>
+      <div class="tk-premiles-lg">⭐ {{ saldo }}</div>
+      <div style="font-size:0.8rem; color:var(--text-muted); font-weight:600; margin-top:6px;">
+        Troque por prêmios no final do período!
+      </div>
+    </div>
+    <a href="{{ url_for('junior.extrato') }}" class="tk-btn tk-btn-ghost">
+      <i class="bi bi-receipt"></i> Ver extrato
+    </a>
+  </div>
+</div>
+
+{# Atalho checklist #}
+<div class="row g-3">
+  <div class="col-12 col-md-6">
+    <a href="{{ url_for('junior.checklist') }}" style="text-decoration:none;">
+      <div class="tk-card tk-card-glow-green" style="cursor:pointer; transition:transform 0.18s;"
+           onmouseover="this.style.transform='translateY(-2px)'"
+           onmouseout="this.style.transform='translateY(0)'">
+        <div style="display:flex; align-items:center; gap:14px;">
+          <div style="width:50px; height:50px; border-radius:var(--radius-md);
+                      background:var(--grad-green); display:flex; align-items:center;
+                      justify-content:center; font-size:1.4rem; flex-shrink:0;">
+            ✅
+          </div>
+          <div>
+            <div style="font-weight:800; font-size:0.95rem;">Checklist de hoje</div>
+            <div style="font-size:0.78rem; color:var(--text-muted); font-weight:600; margin-top:2px;">
+              Marque suas atividades diárias
+            </div>
+          </div>
+          <i class="bi bi-arrow-right ms-auto" style="color:var(--text-muted);"></i>
+        </div>
+      </div>
+    </a>
+  </div>
+
+  <div class="col-12 col-md-6">
+    <a href="{{ url_for('junior.extrato') }}" style="text-decoration:none;">
+      <div class="tk-card tk-card-glow-purple" style="cursor:pointer; transition:transform 0.18s;"
+           onmouseover="this.style.transform='translateY(-2px)'"
+           onmouseout="this.style.transform='translateY(0)'">
+        <div style="display:flex; align-items:center; gap:14px;">
+          <div style="width:50px; height:50px; border-radius:var(--radius-md);
+                      background:var(--grad-purple); display:flex; align-items:center;
+                      justify-content:center; font-size:1.4rem; flex-shrink:0;">
+            📜
+          </div>
+          <div>
+            <div style="font-weight:800; font-size:0.95rem;">Meu extrato</div>
+            <div style="font-size:0.78rem; color:var(--text-muted); font-weight:600; margin-top:2px;">
+              Histórico de Premiles ganhos
+            </div>
+          </div>
+          <i class="bi bi-arrow-right ms-auto" style="color:var(--text-muted);"></i>
+        </div>
+      </div>
+    </a>
+  </div>
+</div>
+
+{% endblock %}

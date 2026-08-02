@@ -1,0 +1,287 @@
+{% extends "base.html" %}
+{% block title %}Lançar Atividade — TeoK!ds.{% endblock %}
+
+{% block content %}
+
+<div class="tk-topbar">
+  <div>
+    <div class="tk-page-title">Lançar atividade</div>
+    <div class="tk-page-subtitle">Individual ou em lote para o PGM inteiro</div>
+  </div>
+  <a href="{{ url_for('lider.historico') }}" class="tk-btn tk-btn-ghost">
+    <i class="bi bi-clock-history"></i> Histórico
+  </a>
+</div>
+
+{# Abas individual / lote #}
+<div style="display:flex; gap:4px; margin-bottom:24px; background:var(--bg-card);
+            border:1px solid var(--border); border-radius:var(--radius-sm);
+            padding:4px; width:fit-content;">
+  <button id="tab-individual" onclick="switchTab('individual')"
+          class="tk-btn tk-btn-purple tk-btn-sm" style="min-width:130px; justify-content:center;">
+    <i class="bi bi-person-fill"></i> Individual
+  </button>
+  <button id="tab-lote" onclick="switchTab('lote')"
+          class="tk-btn tk-btn-ghost tk-btn-sm" style="min-width:130px; justify-content:center;">
+    <i class="bi bi-people-fill"></i> Em lote
+  </button>
+</div>
+
+<div class="row g-4">
+
+  {# ── PAINEL INDIVIDUAL ── #}
+  <div id="painel-individual" class="col-12 col-lg-7">
+    <div class="tk-card tk-card-glow-purple">
+      <div class="card-title" style="font-size:0.72rem; font-weight:800; letter-spacing:1px;
+                                      text-transform:uppercase; color:var(--text-muted); margin-bottom:20px;">
+        Lançamento individual
+      </div>
+
+      <form method="POST" action="{{ url_for('lider.lancamento') }}">
+
+        <div class="mb-3">
+          <label class="tk-label" for="junior_id">Júnior</label>
+          <select class="tk-input" id="junior_id" name="junior_id" required>
+            <option value="" disabled selected>Selecionar criança...</option>
+            {% for junior in juniors %}
+            <option value="{{ junior.id }}">
+              {{ junior.name }} — ⭐ {{ junior.balance.total_balance if junior.balance else 0 }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="mb-3">
+          <label class="tk-label" for="activity_type_id">Atividade</label>
+          <select class="tk-input" id="activity_type_id" name="activity_type_id" required
+                  onchange="preencherPremiles(this, 'premiles')">
+            <option value="" disabled selected>Selecionar atividade...</option>
+            {% for activity in activities %}
+            <option value="{{ activity.id }}" data-premiles="{{ activity.default_premiles }}">
+              {{ activity.name }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="mb-3">
+          <label class="tk-label" for="premiles">Premiles a creditar</label>
+          <input class="tk-input" type="number" id="premiles" name="premiles"
+                 min="1" max="500" placeholder="Ex: 50" required />
+          <div style="font-size:0.75rem; color:var(--text-muted); font-weight:600; margin-top:5px;">
+            Valor padrão preenchido automaticamente ao escolher a atividade.
+          </div>
+        </div>
+
+        <div class="mb-4">
+          <label class="tk-label" for="notes">Observação (opcional)</label>
+          <input class="tk-input" type="text" id="notes" name="notes"
+                 placeholder="Ex: Trouxe dois visitantes" />
+        </div>
+
+        <button type="submit" class="tk-btn tk-btn-purple" style="width:100%; justify-content:center;">
+          <i class="bi bi-star-fill"></i> Creditar Premiles
+        </button>
+      </form>
+    </div>
+  </div>
+
+  {# ── PAINEL EM LOTE ── #}
+  <div id="painel-lote" class="col-12 col-lg-7" style="display:none;">
+    <div class="tk-card tk-card-glow-cyan">
+      <div style="font-size:0.72rem; font-weight:800; letter-spacing:1px;
+                  text-transform:uppercase; color:var(--text-muted); margin-bottom:20px;">
+        Lançamento em lote
+      </div>
+
+      <form method="POST" action="{{ url_for('lider.lancamento_lote') }}">
+
+        <div class="mb-3">
+          <label class="tk-label" for="lote_activity">Atividade</label>
+          <select class="tk-input" id="lote_activity" name="activity_type_id" required
+                  onchange="preencherPremiles(this, 'lote_premiles')">
+            <option value="" disabled selected>Selecionar atividade...</option>
+            {% for activity in activities %}
+            <option value="{{ activity.id }}" data-premiles="{{ activity.default_premiles }}">
+              {{ activity.name }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="mb-4">
+          <label class="tk-label" for="lote_premiles">Premiles por criança</label>
+          <input class="tk-input" type="number" id="lote_premiles" name="premiles"
+                 min="1" max="500" placeholder="Ex: 20" required />
+        </div>
+
+        <div class="mb-3">
+          <label class="tk-label">Selecionar juniores</label>
+          <div style="display:flex; gap:8px; margin-bottom:10px;">
+            <button type="button" onclick="marcarTodos(true)"
+                    class="tk-btn tk-btn-ghost tk-btn-sm">
+              <i class="bi bi-check-all"></i> Marcar todos
+            </button>
+            <button type="button" onclick="marcarTodos(false)"
+                    class="tk-btn tk-btn-ghost tk-btn-sm">
+              <i class="bi bi-x"></i> Desmarcar todos
+            </button>
+          </div>
+
+          <div style="display:flex; flex-direction:column; gap:6px; max-height:300px; overflow-y:auto;
+                      padding:4px 0;" id="lista-juniors">
+            {% for junior in juniors %}
+            <label style="display:flex; align-items:center; gap:12px; padding:10px 14px;
+                           border:1px solid var(--border); border-radius:var(--radius-sm);
+                           background:var(--bg-card2); cursor:pointer;
+                           transition:border-color .18s;"
+                   onmouseover="this.style.borderColor='var(--cyan)'"
+                   onmouseout="this.style.borderColor='var(--border)'">
+              <input type="checkbox" name="junior_ids" value="{{ junior.id }}"
+                     style="accent-color:var(--cyan); width:16px; height:16px;"
+                     class="junior-check" />
+              <div class="tk-avatar av-junior" style="width:28px; height:28px; font-size:0.75rem;">
+                {{ junior.name[0].upper() }}
+              </div>
+              <div style="flex:1;">
+                <div style="font-weight:700; font-size:0.88rem;">{{ junior.name }}</div>
+                <div style="font-size:0.75rem; color:var(--text-muted); font-weight:600;">
+                  {{ junior.pgm.name if junior.pgm else '—' }}
+                </div>
+              </div>
+              <span class="tk-premiles" style="font-size:0.75rem;">
+                ⭐ {{ junior.balance.total_balance if junior.balance else 0 }}
+              </span>
+            </label>
+            {% endfor %}
+          </div>
+
+          <div id="contador-selecionados" style="font-size:0.78rem; color:var(--text-muted);
+               font-weight:600; margin-top:8px; text-align:right;">
+            0 selecionados
+          </div>
+        </div>
+
+        <div class="mb-4">
+          <label class="tk-label" for="lote_notes">Observação (opcional)</label>
+          <input class="tk-input" type="text" id="lote_notes" name="notes"
+                 placeholder="Ex: Presença reunião do dia 15" />
+        </div>
+
+        <button type="submit" class="tk-btn tk-btn-sm"
+                style="width:100%; justify-content:center; padding:12px;
+                       background:linear-gradient(135deg,#00cfff,#0077ff); color:#000; font-weight:800;">
+          <i class="bi bi-people-fill"></i> Creditar para todos os selecionados
+        </button>
+      </form>
+    </div>
+  </div>
+
+  {# Crédito retroativo — sempre visível na lateral #}
+  <div class="col-12 col-lg-5">
+    <div class="tk-card tk-card-glow-orange">
+      <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+        <i class="bi bi-clock-history" style="color:#fbbf24;"></i>
+        <div style="font-size:0.72rem; font-weight:800; letter-spacing:1px;
+                    text-transform:uppercase; color:var(--text-muted);">
+          Crédito retroativo
+        </div>
+      </div>
+      <div style="font-size:0.82rem; color:var(--text-muted); font-weight:600;
+                  margin-bottom:20px; line-height:1.5;">
+        A criança esqueceu de marcar o checklist no dia? Você pode creditar manualmente aqui.
+      </div>
+
+      <form method="POST" id="form-retroativo">
+        <div class="mb-3">
+          <label class="tk-label">Júnior</label>
+          <select class="tk-input" name="junior_id" required onchange="updateRetroUrl(this)">
+            <option value="" disabled selected>Selecionar criança...</option>
+            {% for junior in juniors %}
+            <option value="{{ junior.id }}"
+                    data-url="{{ url_for('lider.credito_retroativo', junior_id=junior.id) }}">
+              {{ junior.name }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="mb-3">
+          <label class="tk-label">Data da atividade</label>
+          <input class="tk-input" type="date" name="activity_date" required />
+        </div>
+
+        <div class="mb-3">
+          <label class="tk-label">Atividade do checklist</label>
+          <select class="tk-input" name="activity_type_id" required
+                  onchange="preencherPremiles(this, 'ret_premiles')">
+            <option value="" disabled selected>Selecionar...</option>
+            {% for activity in checklist_activities %}
+            <option value="{{ activity.id }}" data-premiles="{{ activity.default_premiles }}">
+              {{ activity.name }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="mb-4">
+          <label class="tk-label">Premiles</label>
+          <input class="tk-input" type="number" id="ret_premiles" name="premiles"
+                 min="1" max="200" placeholder="Ex: 10" required />
+        </div>
+
+        <button type="submit" class="tk-btn tk-btn-ghost" style="width:100%; justify-content:center;">
+          <i class="bi bi-clock-history"></i> Registrar crédito retroativo
+        </button>
+      </form>
+    </div>
+  </div>
+
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Define data máxima do retroativo como hoje
+  document.querySelector('input[type="date"]').max = new Date().toISOString().split('T')[0];
+
+  function updateRetroUrl(select) {
+    const url = select.options[select.selectedIndex].dataset.url;
+    if (url) document.getElementById('form-retroativo').action = url;
+  }
+
+  function preencherPremiles(select, targetId) {
+    const opt = select.options[select.selectedIndex];
+    const val = opt.dataset.premiles;
+    if (val) document.getElementById(targetId).value = val;
+  }
+
+  function switchTab(tab) {
+    const isIndividual = tab === 'individual';
+    document.getElementById('painel-individual').style.display = isIndividual ? '' : 'none';
+    document.getElementById('painel-lote').style.display       = isIndividual ? 'none' : '';
+    document.getElementById('tab-individual').className =
+      'tk-btn tk-btn-sm ' + (isIndividual ? 'tk-btn-purple' : 'tk-btn-ghost');
+    document.getElementById('tab-lote').className =
+      'tk-btn tk-btn-sm ' + (isIndividual ? 'tk-btn-ghost' : 'tk-btn-purple');
+    if (!isIndividual) document.getElementById('tab-lote').style.cssText +=
+      ';background:linear-gradient(135deg,#00cfff,#0077ff);color:#000;min-width:130px;justify-content:center;';
+  }
+
+  function marcarTodos(val) {
+    document.querySelectorAll('.junior-check').forEach(cb => cb.checked = val);
+    atualizarContador();
+  }
+
+  function atualizarContador() {
+    const n = document.querySelectorAll('.junior-check:checked').length;
+    document.getElementById('contador-selecionados').textContent =
+      n + ' selecionado' + (n !== 1 ? 's' : '');
+  }
+
+  document.querySelectorAll('.junior-check').forEach(cb =>
+    cb.addEventListener('change', atualizarContador)
+  );
+</script>
+{% endblock %}

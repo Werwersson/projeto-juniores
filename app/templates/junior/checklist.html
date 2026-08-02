@@ -1,0 +1,223 @@
+{% extends "base.html" %}
+{% block title %}Checklist — TeoK!ds.{% endblock %}
+
+{% block content %}
+
+<div class="tk-topbar">
+  <div>
+    <div class="tk-page-title">Checklist de hoje</div>
+    <div class="tk-page-subtitle">
+      {{ today.strftime('%A, %d de %B') | capitalize }}
+    </div>
+  </div>
+  <span class="tk-premiles">⭐ {{ current_user.balance.total_balance if current_user.balance else 0 }} Premiles</span>
+</div>
+
+{# Contadores ocultos usados pelo JS de celebração #}
+{% set done_count = already_done_ids | length %}
+{% set total = activities | length %}
+<span id="tk-done-count"  style="display:none;">{{ done_count }}</span>
+<span id="tk-total-atividades" style="display:none;">{{ total }}</span>
+
+{# Overlay de celebração completa (aparece via JS) #}
+<div id="tk-celebracao" style="display:none; position:fixed; inset:0; z-index:9998;
+     background:rgba(0,0,0,0.7); backdrop-filter:blur(4px);
+     align-items:center; justify-content:center; flex-direction:column; gap:16px;">
+  <div style="font-size:5rem; animation:tkpulse 0.6s ease infinite alternate;">🏆</div>
+  <div style="font-size:1.6rem; font-weight:900; color:#fff; text-align:center; padding:0 24px;">
+    Missão cumprida!
+  </div>
+  <div style="font-size:0.95rem; color:rgba(255,255,255,0.7); font-weight:700;">
+    Você completou todas as atividades de hoje!
+  </div>
+  <button onclick="document.getElementById('tk-celebracao').style.display='none'"
+          class="tk-btn tk-btn-purple" style="margin-top:8px;">
+    Fechar <i class="bi bi-x-lg"></i>
+  </button>
+</div>
+
+<div class="row g-4">
+  <div class="col-12 col-lg-7">
+    <div class="tk-card">
+      <div style="font-size:0.72rem; font-weight:800; letter-spacing:1px;
+                  text-transform:uppercase; color:var(--text-muted); margin-bottom:16px;">
+        Suas atividades de hoje
+      </div>
+
+      {% if activities %}
+        {% for activity in activities %}
+          {% set is_done = activity.id in already_done_ids %}
+          <form class="tk-check-form" method="POST" action="{{ url_for('junior.checklist') }}">
+            <input type="hidden" name="activity_type_id" value="{{ activity.id }}" />
+            <input type="hidden" name="premiles" value="{{ activity.default_premiles or 10 }}" />
+            <button type="submit"
+                    class="tk-check-item {% if is_done %}done{% endif %}"
+                    style="width:100%; text-align:left; background:none; cursor:{% if is_done %}default{% else %}pointer{% endif %};"
+                    {% if is_done %}disabled{% endif %}
+                    data-premiles="{{ activity.default_premiles or 10 }}">
+              <div class="tk-check-circle">
+                {% if is_done %}
+                  <i class="bi bi-check-lg" style="color:#fff; font-weight:800;"></i>
+                {% else %}
+                  <i class="bi bi-circle" style="color:var(--text-muted);"></i>
+                {% endif %}
+              </div>
+              <div style="flex:1;">
+                <div class="tk-check-label">{{ activity.name }}</div>
+                <div class="tk-check-pts">
+                  {% if is_done %}
+                    ✅ Concluída hoje
+                  {% else %}
+                    +{{ activity.default_premiles or 10 }} Premiles ao marcar
+                  {% endif %}
+                </div>
+              </div>
+              {% if not is_done %}
+              <i class="bi bi-arrow-right" style="color:var(--text-muted); font-size:0.9rem;"></i>
+              {% endif %}
+            </button>
+          </form>
+        {% endfor %}
+      {% else %}
+        <div style="text-align:center; padding:30px; color:var(--text-muted); font-weight:600;">
+          <i class="bi bi-clipboard-check" style="font-size:2rem; display:block; margin-bottom:8px;"></i>
+          Nenhuma atividade disponível no momento.
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  {# Painel lateral #}
+  <div class="col-12 col-lg-5">
+    <div class="tk-card" style="border-color:rgba(124,58,237,0.3);">
+      <div style="font-size:1.5rem; margin-bottom:10px;">💡</div>
+      <div style="font-weight:800; font-size:0.95rem; margin-bottom:8px;">Como funciona?</div>
+      <ul style="color:var(--text-muted); font-size:0.83rem; font-weight:600;
+                 padding-left:18px; line-height:1.9; margin:0;">
+        <li>Marque cada atividade que você fez <strong style="color:var(--text);">hoje</strong>.</li>
+        <li>Os Premiles são creditados automaticamente.</li>
+        <li>Só é possível marcar atividades do dia atual.</li>
+        <li>Se esquecer, fale com seu líder — ele pode ajudar!</li>
+      </ul>
+    </div>
+
+    <div class="tk-card" style="border-color:rgba(249,115,22,0.25); margin-top:12px;">
+      <div style="font-size:0.7rem; font-weight:800; letter-spacing:1px;
+                  text-transform:uppercase; color:var(--text-muted); margin-bottom:12px;">
+        Progresso de hoje
+      </div>
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+        <span id="tk-progress-text" style="font-size:0.85rem; font-weight:700;">
+          {{ done_count }} / {{ total }} concluídas
+        </span>
+        <span style="font-size:0.82rem; font-weight:800; color:#fbbf24;">
+          +{{ done_count * 10 }} Premiles
+        </span>
+      </div>
+      <div style="background:var(--bg-card2); border-radius:20px; height:8px; overflow:hidden;">
+        <div id="tk-progress-fill"
+             style="height:8px; border-radius:20px; background:var(--grad-green);
+                    width:{{ ((done_count / total * 100) if total else 0) | int }}%;
+                    transition:width 0.5s ease;">
+        </div>
+      </div>
+
+      {# Badge de conclusão total #}
+      {% if done_count == total and total > 0 %}
+      <div style="margin-top:14px; padding:10px 14px; background:rgba(16,185,129,0.1);
+                  border:1px solid rgba(16,185,129,0.3); border-radius:var(--radius-sm);
+                  text-align:center; font-weight:800; font-size:0.85rem; color:#6ee7b7;">
+        🏆 Tudo concluído hoje! Incrível!
+      </div>
+      {% endif %}
+    </div>
+
+    {# Card de notificação push #}
+    <div id="card-notif" class="tk-card" style="margin-top:12px; border-color:rgba(6,182,212,0.25); display:none;">
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
+        <i class="bi bi-bell-fill" style="color:#67e8f9;"></i>
+        <span style="font-size:0.78rem; font-weight:800; letter-spacing:1px;
+                     text-transform:uppercase; color:var(--text-muted);">Lembrete diário</span>
+      </div>
+      <p style="font-size:0.82rem; color:var(--text-muted); font-weight:600; margin-bottom:12px; line-height:1.5;">
+        Quer receber um lembrete para não esquecer seu checklist?
+      </p>
+      <button id="btn-ativar-notif" onclick="ativarNotificacoes()"
+              class="tk-btn tk-btn-ghost tk-btn-sm" style="width:100%; justify-content:center;">
+        <i class="bi bi-bell-fill"></i> Ativar lembretes
+      </button>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/checklist.js') }}"></script>
+<script>
+// ── Notificações push via Service Worker ──────────────
+async function ativarNotificacoes() {
+  if (!('Notification' in window)) {
+    alert('Seu navegador não suporta notificações.');
+    return;
+  }
+  const permissao = await Notification.requestPermission();
+  if (permissao === 'granted') {
+    agendarLembrete();
+    document.getElementById('btn-ativar-notif').textContent = '✅ Lembretes ativados!';
+    document.getElementById('btn-ativar-notif').disabled = true;
+    localStorage.setItem('tk_notif', '1');
+  }
+}
+
+function agendarLembrete() {
+  // Lembrete diário às 20h via setTimeout até meia-noite
+  const agora = new Date();
+  const lembrete = new Date();
+  lembrete.setHours(20, 0, 0, 0);
+  if (lembrete <= agora) lembrete.setDate(lembrete.getDate() + 1);
+
+  const diff = lembrete - agora;
+  setTimeout(function() {
+    new Notification('TeoK!ds. 🌟', {
+      body: 'Não esqueça de marcar seu checklist hoje!',
+      icon: '/static/img/icon-192.png',
+      tag: 'checklist-lembrete'
+    });
+    // Reagenda para o dia seguinte
+    setInterval(function() {
+      new Notification('TeoK!ds. 🌟', {
+        body: 'Não esqueça de marcar seu checklist hoje!',
+        icon: '/static/img/icon-192.png',
+        tag: 'checklist-lembrete'
+      });
+    }, 24 * 60 * 60 * 1000);
+  }, diff);
+}
+
+// Mostra card de notificação se suportado e não ativado
+document.addEventListener('DOMContentLoaded', function() {
+  if ('Notification' in window && Notification.permission !== 'granted') {
+    if (!localStorage.getItem('tk_notif')) {
+      document.getElementById('card-notif').style.display = 'block';
+    }
+  } else if (localStorage.getItem('tk_notif')) {
+    const btn = document.getElementById('btn-ativar-notif');
+    if (btn) { btn.textContent = '✅ Lembretes ativados!'; btn.disabled = true; }
+    document.getElementById('card-notif').style.display = 'block';
+  }
+});
+
+// Celebração overlay se todas já concluídas ao carregar
+{% if done_count == total and total > 0 and request.method == 'GET' %}
+// já veio completo do server — não mostra de novo
+{% endif %}
+</script>
+
+<style>
+@keyframes tkpulse {
+  from { transform: scale(1); }
+  to   { transform: scale(1.15); }
+}
+</style>
+{% endblock %}

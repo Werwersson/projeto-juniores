@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — Líder{% endblock %}
+
+{% block content %}
+
+<div class="tk-topbar">
+  <div>
+    <div class="tk-page-title">Meu PGM</div>
+    <div class="tk-page-subtitle">
+      {% for pgm in pgms %}{{ pgm.name }}{% if not loop.last %}, {% endif %}{% endfor %}
+    </div>
+  </div>
+  <a href="{{ url_for('lider.lancamento') }}" class="tk-btn tk-btn-purple">
+    <i class="bi bi-plus-lg"></i> Lançar atividade
+  </a>
+</div>
+
+{% for pgm in pgms %}
+<div class="tk-card mb-4">
+
+  {# Cabeçalho do PGM com renomear inline #}
+  <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px;">
+    <div>
+      <span style="font-size:1.1rem; font-weight:900;">{{ pgm.name }}</span>
+      <span style="font-size:0.75rem; color:var(--text-muted); font-weight:600; margin-left:10px;">
+        {{ pgm.juniors | length }} juniores
+      </span>
+    </div>
+    {# Botão para abrir modal de renomear #}
+    <button class="tk-btn tk-btn-ghost tk-btn-sm"
+            data-bs-toggle="modal"
+            data-bs-target="#modal-renomear-{{ pgm.id }}">
+      <i class="bi bi-pencil"></i> Renomear
+    </button>
+  </div>
+
+  {# Tabela de juniores #}
+  {% if pgm.juniors %}
+  <table class="tk-table">
+    <thead>
+      <tr>
+        <th>Júnior</th>
+        <th>Premiles</th>
+        <th>Ações</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for junior in pgm.juniors %}
+      <tr>
+        <td>
+          <div style="display:flex; align-items:center; gap:10px;">
+            <div class="tk-avatar av-junior">{{ junior.name[0].upper() }}</div>
+            <span style="font-weight:700;">{{ junior.name }}</span>
+          </div>
+        </td>
+        <td>
+          <span class="tk-premiles">
+            ⭐ {{ junior.balance.total_balance if junior.balance else 0 }}
+          </span>
+        </td>
+        <td>
+          <a href="{{ url_for('lider.junior_detail', junior_id=junior.id) }}"
+             class="tk-btn tk-btn-ghost tk-btn-sm">
+            <i class="bi bi-eye"></i> Ver
+          </a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div style="text-align:center; padding:30px; color:var(--text-muted); font-weight:600;">
+    <i class="bi bi-person-plus" style="font-size:1.8rem; display:block; margin-bottom:8px;"></i>
+    Nenhum júnior cadastrado neste PGM ainda.
+  </div>
+  {% endif %}
+
+</div>
+
+{# Modal renomear PGM #}
+<div class="modal fade" id="modal-renomear-{{ pgm.id }}" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content"
+         style="background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-lg);">
+      <div class="modal-header" style="border-color:var(--border);">
+        <h5 class="modal-title" style="font-weight:800; font-size:0.95rem;">
+          Renomear PGM
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="POST" action="{{ url_for('lider.renomear_pgm', pgm_id=pgm.id) }}">
+        <div class="modal-body">
+          <label class="tk-label" for="nome-pgm-{{ pgm.id }}">Novo nome (escolhido pelos juniores)</label>
+          <input class="tk-input" type="text" id="nome-pgm-{{ pgm.id }}"
+                 name="nome" value="{{ pgm.name }}" required
+                 placeholder="Ex: Guerreiros de Deus" />
+        </div>
+        <div class="modal-footer" style="border-color:var(--border);">
+          <button type="button" class="tk-btn tk-btn-ghost tk-btn-sm" data-bs-dismiss="modal">
+            Cancelar
+          </button>
+          <button type="submit" class="tk-btn tk-btn-purple tk-btn-sm">
+            <i class="bi bi-check-lg"></i> Salvar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% endfor %}
+
+{% endblock %}

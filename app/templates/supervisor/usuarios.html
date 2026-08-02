@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% block title %}Usuários — Supervisor{% endblock %}
+
+{% block content %}
+
+<div class="tk-topbar">
+  <div>
+    <div class="tk-page-title">Usuários</div>
+    <div class="tk-page-subtitle">{{ usuarios | length }} cadastrados</div>
+  </div>
+  <a href="{{ url_for('supervisor.novo_usuario') }}" class="tk-btn tk-btn-purple">
+    <i class="bi bi-person-plus-fill"></i> Novo usuário
+  </a>
+</div>
+
+{# Filtro rápido por role #}
+<div style="display:flex; gap:8px; margin-bottom:20px; flex-wrap:wrap;">
+  <button class="tk-btn tk-btn-ghost tk-btn-sm filtro-btn active" data-role="todos">
+    Todos ({{ usuarios | length }})
+  </button>
+  <button class="tk-btn tk-btn-ghost tk-btn-sm filtro-btn" data-role="supervisor">
+    <i class="bi bi-shield-fill"></i>
+    Supervisores ({{ usuarios | selectattr('role.value', 'equalto', 'supervisor') | list | length }})
+  </button>
+  <button class="tk-btn tk-btn-ghost tk-btn-sm filtro-btn" data-role="lider">
+    <i class="bi bi-star-fill"></i>
+    Líderes ({{ usuarios | selectattr('role.value', 'equalto', 'lider') | list | length }})
+  </button>
+  <button class="tk-btn tk-btn-ghost tk-btn-sm filtro-btn" data-role="junior">
+    <i class="bi bi-person-fill"></i>
+    Juniores ({{ usuarios | selectattr('role.value', 'equalto', 'junior') | list | length }})
+  </button>
+</div>
+
+<div class="tk-card">
+  <table class="tk-table" id="tabela-usuarios">
+    <thead>
+      <tr>
+        <th>Usuário</th>
+        <th>E-mail</th>
+        <th>Papel</th>
+        <th>PGM / Grupo</th>
+        <th>Premiles</th>
+        <th>Ações</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for u in usuarios %}
+      <tr data-role="{{ u.role.value }}">
+        <td>
+          <div style="display:flex; align-items:center; gap:10px;">
+            <div class="tk-avatar av-{{ u.role.value }}">{{ u.name[0].upper() }}</div>
+            <span style="font-weight:700;">{{ u.name }}</span>
+          </div>
+        </td>
+        <td style="color:var(--text-muted); font-size:0.85rem;">{{ u.email }}</td>
+        <td>
+          <span class="tk-badge tk-badge-{{ u.role.value }}">
+            {{ u.role.value | capitalize }}
+          </span>
+        </td>
+        <td style="font-size:0.85rem; color:var(--text-soft);">
+          {% if u.role.value == 'junior' %}
+            {{ u.pgm.name if u.pgm else '—' }}
+          {% elif u.role.value == 'lider' %}
+            {% set pgms_lider = u.led_pgms | map(attribute='pgm') | list %}
+            {{ pgms_lider | map(attribute='name') | join(', ') if pgms_lider else '—' }}
+          {% else %}
+            Todos
+          {% endif %}
+        </td>
+        <td>
+          {% if u.role.value == 'junior' %}
+            <span class="tk-premiles">⭐ {{ u.balance.total_balance if u.balance else 0 }}</span>
+          {% else %}
+            <span style="color:var(--text-muted); font-size:0.8rem;">—</span>
+          {% endif %}
+        </td>
+        <td>
+          <div style="display:flex; gap:6px;">
+            <a href="{{ url_for('supervisor.editar_usuario', user_id=u.id) }}"
+               class="tk-btn tk-btn-ghost tk-btn-sm">
+              <i class="bi bi-pencil"></i>
+            </a>
+            {% if u.id != current_user.id %}
+            <form method="POST"
+                  action="{{ url_for('supervisor.excluir_usuario', user_id=u.id) }}"
+                  onsubmit="return confirm('Excluir {{ u.name }}? Esta ação não pode ser desfeita.')">
+              <button type="submit" class="tk-btn tk-btn-sm"
+                      style="background:rgba(239,68,68,0.1); color:#fca5a5; border:1px solid rgba(239,68,68,0.2);">
+                <i class="bi bi-trash"></i>
+              </button>
+            </form>
+            {% endif %}
+          </div>
+        </td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="6" style="text-align:center; padding:40px; color:var(--text-muted); font-weight:600;">
+          Nenhum usuário cadastrado.
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.querySelectorAll('.filtro-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.filtro-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const role = btn.dataset.role;
+      document.querySelectorAll('#tabela-usuarios tbody tr[data-role]').forEach(row => {
+        row.style.display = (role === 'todos' || row.dataset.role === role) ? '' : 'none';
+      });
+    });
+  });
+</script>
+{% endblock %}

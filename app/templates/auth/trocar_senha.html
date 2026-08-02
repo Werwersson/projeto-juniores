@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block title %}Trocar senha — TeoK!ds.{% endblock %}
+
+{% block content %}
+<div class="tk-login-bg">
+  <div class="tk-login-card">
+
+    {# Ícone e título #}
+    <div style="text-align:center; margin-bottom:28px;">
+      <div style="width:56px; height:56px; border-radius:50%;
+                  background:linear-gradient(135deg,rgba(124,58,237,.2),rgba(6,182,212,.2));
+                  border:1px solid rgba(124,58,237,.3);
+                  display:flex; align-items:center; justify-content:center;
+                  font-size:1.6rem; margin:0 auto 14px;">
+        🔑
+      </div>
+      <div class="tk-logo-text" style="font-size:1.4rem; margin-bottom:4px;">
+        TeoK<span style="-webkit-text-fill-color:#fff">!</span>ds<span style="-webkit-text-fill-color:#fff">.</span>
+      </div>
+      <div style="font-size:0.9rem; font-weight:700; color:var(--text);">
+        {% if force %}Defina sua senha{% else %}Trocar senha{% endif %}
+      </div>
+    </div>
+
+    {# Aviso de primeiro acesso #}
+    {% if force %}
+    <div class="tk-alert tk-alert-warning" style="margin-bottom:20px;">
+      <i class="bi bi-shield-exclamation"></i>
+      <span>Você está usando a senha padrão. Por segurança, escolha uma nova antes de continuar.</span>
+    </div>
+    {% endif %}
+
+    {# Flash messages #}
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="tk-alert tk-alert-{{ category }}" style="margin-bottom:12px;">
+            {% if category == 'danger' %}<i class="bi bi-x-circle-fill"></i>
+            {% elif category == 'warning' %}<i class="bi bi-exclamation-triangle-fill"></i>
+            {% else %}<i class="bi bi-check-circle-fill"></i>{% endif %}
+            {{ message }}
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <form method="POST" action="{{ url_for('auth.trocar_senha') }}">
+
+      <div style="margin-bottom:16px;">
+        <label class="tk-label" for="senha_atual">Senha atual</label>
+        <input class="tk-input" type="password" id="senha_atual" name="senha_atual"
+               placeholder="••••••••" required autocomplete="current-password" />
+      </div>
+
+      <div style="margin-bottom:16px;">
+        <label class="tk-label" for="nova_senha">Nova senha</label>
+        <input class="tk-input" type="password" id="nova_senha" name="nova_senha"
+               placeholder="Mínimo 6 caracteres" required autocomplete="new-password"
+               oninput="checkSenha()" />
+      </div>
+
+      <div style="margin-bottom:24px;">
+        <label class="tk-label" for="confirmar">Confirmar nova senha</label>
+        <input class="tk-input" type="password" id="confirmar" name="confirmar"
+               placeholder="Repita a nova senha" required autocomplete="new-password"
+               oninput="checkSenha()" />
+        <div id="senha-feedback" style="font-size:0.75rem; font-weight:700; margin-top:6px; min-height:18px;"></div>
+      </div>
+
+      <button type="submit" class="tk-btn tk-btn-purple"
+              style="width:100%; justify-content:center; padding:13px;">
+        <i class="bi bi-check-circle-fill"></i> Salvar nova senha
+      </button>
+
+    </form>
+
+    {% if not force %}
+    <div style="text-align:center; margin-top:18px;">
+      <a href="{{ url_for('auth.index') }}"
+         style="font-size:0.82rem; color:var(--text-muted); font-weight:700; text-decoration:none;">
+        <i class="bi bi-arrow-left"></i> Voltar
+      </a>
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function checkSenha() {
+  const nova = document.getElementById('nova_senha').value;
+  const conf = document.getElementById('confirmar').value;
+  const fb = document.getElementById('senha-feedback');
+  if (!conf) { fb.textContent = ''; return; }
+  if (nova === conf && nova.length >= 6) {
+    fb.textContent = '✅ Senhas coincidem';
+    fb.style.color = '#6ee7b7';
+  } else if (nova !== conf) {
+    fb.textContent = '❌ Senhas não coincidem';
+    fb.style.color = '#fca5a5';
+  } else {
+    fb.textContent = '⚠️ Mínimo 6 caracteres';
+    fb.style.color = '#fdba74';
+  }
+}
+</script>
+{% endblock %}

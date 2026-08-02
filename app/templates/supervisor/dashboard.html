@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — Supervisor{% endblock %}
+
+{% block content %}
+
+{# Topbar #}
+<div class="tk-topbar">
+  <div>
+    <div class="tk-page-title">
+      Olá, {{ current_user.name.split()[0] }}! 👋
+    </div>
+    <div class="tk-page-subtitle">Visão geral de todos os PGMs</div>
+  </div>
+  <span class="tk-badge tk-badge-supervisor">
+    <i class="bi bi-shield-fill me-1"></i> Supervisor
+  </span>
+</div>
+
+{# Stats globais #}
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="tk-stat tk-stat-purple">
+      <div class="tk-stat-label">Total de PGMs</div>
+      <div class="tk-stat-value">{{ pgms | length }}</div>
+      <div class="tk-stat-sub">grupos ativos</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="tk-stat tk-stat-cyan">
+      <div class="tk-stat-label">Juniores</div>
+      <div class="tk-stat-value">
+        {{ pgms | sum(attribute='juniors') | list | length if pgms else 0 }}
+      </div>
+      <div class="tk-stat-sub">crianças cadastradas</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="tk-stat tk-stat-green">
+      <div class="tk-stat-label">Líderes</div>
+      <div class="tk-stat-value">
+        {{ pgms | sum(attribute='leaders') | list | length if pgms else 0 }}
+      </div>
+      <div class="tk-stat-sub">líderes ativos</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="tk-stat tk-stat-orange">
+      <div class="tk-stat-label">Premiles hoje</div>
+      <div class="tk-stat-value">—</div>
+      <div class="tk-stat-sub">creditados hoje</div>
+    </div>
+  </div>
+</div>
+
+{# PGM cards #}
+<div class="d-flex align-items-center justify-content-between mb-3" id="pgms">
+  <div style="font-size:0.75rem; font-weight:800; letter-spacing:1px; text-transform:uppercase; color:var(--text-muted);">
+    Grupos
+  </div>
+  <div style="display:flex; gap:8px;">
+    <a href="{{ url_for('supervisor.relatorios') }}" class="tk-btn tk-btn-ghost tk-btn-sm">
+      <i class="bi bi-file-earmark-bar-graph-fill"></i> Relatório
+    </a>
+    <a href="{{ url_for('lider.lancamento') }}" class="tk-btn tk-btn-purple tk-btn-sm">
+      <i class="bi bi-plus-lg"></i> Novo lançamento
+    </a>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  {% set grad_colors = ['purple', 'cyan', 'green'] %}
+  {% for pgm in pgms %}
+  <div class="col-12 col-md-4">
+    <div class="tk-pgm-card">
+      <div class="tk-pgm-header">
+        <div>
+          <div class="tk-pgm-name">{{ pgm.name }}</div>
+          <div style="font-size:0.72rem; color:var(--text-muted); font-weight:600; margin-top:2px;">
+            {{ pgm.juniors | length }} júnior{{ 'es' if pgm.juniors | length != 1 else '' }}
+          </div>
+        </div>
+        <a href="{{ url_for('supervisor.pgm_detail', pgm_id=pgm.id) }}"
+           class="tk-btn tk-btn-ghost tk-btn-sm">
+          Ver <i class="bi bi-arrow-right"></i>
+        </a>
+      </div>
+      <div class="tk-pgm-body">
+
+        {# Líderes do grupo #}
+        <div style="font-size:0.7rem; font-weight:800; letter-spacing:1px; text-transform:uppercase; color:var(--text-muted); margin-bottom:10px;">
+          Líderes
+        </div>
+        {% for pl in pgm.leaders %}
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+          <div class="tk-avatar av-lider" style="width:26px; height:26px; font-size:0.7rem;">
+            {{ pl.leader.name[0].upper() }}
+          </div>
+          <span style="font-size:0.83rem; font-weight:600;">{{ pl.leader.name }}</span>
+        </div>
+        {% else %}
+        <span style="font-size:0.8rem; color:var(--text-muted);">Sem líderes cadastrados</span>
+        {% endfor %}
+
+        {# Juniores — top 3 com saldo #}
+        {% if pgm.juniors %}
+        <div style="font-size:0.7rem; font-weight:800; letter-spacing:1px; text-transform:uppercase; color:var(--text-muted); margin: 14px 0 10px;">
+          Destaques
+        </div>
+        {% for junior in pgm.juniors[:3] %}
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <div class="tk-avatar av-junior" style="width:26px; height:26px; font-size:0.7rem;">
+              {{ junior.name[0].upper() }}
+            </div>
+            <span style="font-size:0.83rem; font-weight:600;">{{ junior.name }}</span>
+          </div>
+          <span class="tk-premiles" style="font-size:0.72rem; padding:2px 8px;">
+            ⭐ {{ junior.balance.total_balance if junior.balance else 0 }}
+          </span>
+        </div>
+        {% endfor %}
+        {% if pgm.juniors | length > 3 %}
+        <div style="font-size:0.75rem; color:var(--text-muted); font-weight:600; margin-top:6px;">
+          + {{ pgm.juniors | length - 3 }} outros
+        </div>
+        {% endif %}
+        {% endif %}
+
+      </div>
+    </div>
+  </div>
+  {% else %}
+  <div class="col-12">
+    <div class="tk-card" style="text-align:center; padding:40px;">
+      <i class="bi bi-people" style="font-size:2rem; color:var(--text-muted);"></i>
+      <div style="color:var(--text-muted); font-weight:600; margin-top:10px;">
+        Nenhum PGM cadastrado ainda.
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+{% endblock %}

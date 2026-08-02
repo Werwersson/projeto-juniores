@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% block title %}Meu Extrato — TeoK!ds.{% endblock %}
+
+{% block content %}
+
+<div class="tk-topbar">
+  <div>
+    <div class="tk-page-title">Meu extrato</div>
+    <div class="tk-page-subtitle">Histórico completo de Premiles</div>
+  </div>
+  <span class="tk-premiles">⭐ {{ saldo }} Premiles</span>
+</div>
+
+<div class="row g-4">
+
+  {# Saldo em destaque #}
+  <div class="col-12">
+    <div class="row g-3">
+      <div class="col-6 col-md-3">
+        <div class="tk-stat tk-stat-orange">
+          <div class="tk-stat-label">Saldo atual</div>
+          <div class="tk-stat-value">{{ saldo }}</div>
+          <div class="tk-stat-sub">Premiles disponíveis</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="tk-stat tk-stat-green">
+          <div class="tk-stat-label">Do checklist</div>
+          <div class="tk-stat-value">{{ checklist_logs | sum(attribute='premiles_awarded') }}</div>
+          <div class="tk-stat-sub">em {{ checklist_logs | length }} registro{{ 's' if checklist_logs | length != 1 }}</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="tk-stat tk-stat-purple">
+          <div class="tk-stat-label">Do líder</div>
+          <div class="tk-stat-value">{{ manual_logs | sum(attribute='premiles_awarded') }}</div>
+          <div class="tk-stat-sub">em {{ manual_logs | length }} lançamento{{ 's' if manual_logs | length != 1 }}</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="tk-stat tk-stat-cyan">
+          <div class="tk-stat-label">Total de registros</div>
+          <div class="tk-stat-value">{{ (checklist_logs | length) + (manual_logs | length) }}</div>
+          <div class="tk-stat-sub">atividades registradas</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# Lista unificada de registros #}
+  <div class="col-12 col-lg-8">
+    <div class="tk-card">
+      <div style="font-size:0.72rem; font-weight:800; letter-spacing:1px; text-transform:uppercase; color:var(--text-muted); margin-bottom:20px;">
+        Histórico detalhado
+      </div>
+
+      {# Checklist logs #}
+      {% for log in checklist_logs %}
+      <div class="tk-extrato-item">
+        <div class="tk-extrato-icon" style="background:rgba(16,185,129,0.15);">
+          {% if log.credited_by %}🔧{% else %}✅{% endif %}
+        </div>
+        <div style="flex:1;">
+          <div style="font-weight:700; font-size:0.88rem;">
+            {{ log.activity_type.name }}
+          </div>
+          <div style="font-size:0.75rem; color:var(--text-muted); font-weight:600; margin-top:2px;">
+            {{ log.activity_date.strftime('%d/%m/%Y') }}
+            {% if log.credited_by %}
+              · Creditado pelo líder
+            {% else %}
+              · Marcado por você
+            {% endif %}
+          </div>
+        </div>
+        <div class="tk-extrato-pts">+{{ log.premiles_awarded }}</div>
+      </div>
+      {% endfor %}
+
+      {# Manual logs #}
+      {% for log in manual_logs %}
+      <div class="tk-extrato-item">
+        <div class="tk-extrato-icon" style="background:rgba(124,58,237,0.15);">⭐</div>
+        <div style="flex:1;">
+          <div style="font-weight:700; font-size:0.88rem;">
+            {{ log.activity_type.name }}
+          </div>
+          <div style="font-size:0.75rem; color:var(--text-muted); font-weight:600; margin-top:2px;">
+            {{ log.created_at.strftime('%d/%m/%Y') }}
+            · Lançado por {{ log.launcher.name }}
+            {% if log.notes %} · <em>{{ log.notes }}</em>{% endif %}
+          </div>
+        </div>
+        <div class="tk-extrato-pts">+{{ log.premiles_awarded }}</div>
+      </div>
+      {% endfor %}
+
+      {% if not checklist_logs and not manual_logs %}
+      <div style="text-align:center; padding:40px; color:var(--text-muted); font-weight:600;">
+        <i class="bi bi-receipt" style="font-size:2rem; display:block; margin-bottom:10px;"></i>
+        Nenhum Premile registrado ainda.<br>
+        <span style="font-size:0.82rem;">Complete seu checklist diário para começar!</span>
+      </div>
+      {% endif %}
+
+    </div>
+  </div>
+
+  {# Dica lateral #}
+  <div class="col-12 col-lg-4">
+    <div class="tk-card" style="border-color:rgba(249,115,22,0.25);">
+      <div style="font-size:1.5rem; margin-bottom:10px;">🏆</div>
+      <div style="font-weight:800; font-size:0.95rem; margin-bottom:8px;">
+        Como usar seus Premiles?
+      </div>
+      <p style="color:var(--text-muted); font-size:0.82rem; font-weight:600; line-height:1.7;">
+        Acumule o máximo de Premiles participando das atividades do seu PGM e do checklist diário.
+        No final do período, seu saldo será trocado por prêmios incríveis!
+      </p>
+      <div style="background:var(--bg-card2); border-radius:var(--radius-sm); padding:14px; margin-top:8px;">
+        <div style="font-size:0.72rem; font-weight:800; letter-spacing:1px; text-transform:uppercase; color:var(--text-muted); margin-bottom:8px;">
+          Legenda
+        </div>
+        <div style="font-size:0.8rem; font-weight:600; color:var(--text-soft); line-height:2;">
+          ✅ Marcado por você<br>
+          🔧 Creditado pelo líder<br>
+          ⭐ Atividade do PGM
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+{% endblock %}

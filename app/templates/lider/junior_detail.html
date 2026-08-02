@@ -1,0 +1,6 @@
+{% extends "supervisor/junior_detail.html" %}
+{#
+  O template do líder é idêntico ao do supervisor para esta view.
+  Herdamos e apenas sobrescrevemos o título para clareza de contexto.
+#}
+{% block title %}{{ junior.name }} — Meu PGM{% endblock %}

@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+{% block title %}Histórico de Atividades — TeoK!ds.{% endblock %}
+
+{% block content %}
+
+<div class="tk-topbar">
+  <div>
+    <a href="{{ url_for('lider.lancamento') }}"
+       style="font-size:0.8rem; color:var(--text-muted); font-weight:700; text-decoration:none;
+              display:flex; align-items:center; gap:5px; margin-bottom:8px;">
+      <i class="bi bi-arrow-left"></i> Voltar ao lançamento
+    </a>
+    <div class="tk-page-title">Histórico de atividades</div>
+    <div class="tk-page-subtitle">
+      Últimos {{ (manual_logs | length) + (checklist_logs | length) }} registros
+    </div>
+  </div>
+</div>
+
+{# Filtro por tipo #}
+<div style="display:flex; gap:8px; margin-bottom:20px; flex-wrap:wrap;">
+  <button class="tk-btn tk-btn-ghost tk-btn-sm filtro-btn active" data-tipo="todos">
+    Todos ({{ (manual_logs | length) + (checklist_logs | length) }})
+  </button>
+  <button class="tk-btn tk-btn-ghost tk-btn-sm filtro-btn" data-tipo="manual">
+    <i class="bi bi-pencil-fill"></i> Lançamentos manuais ({{ manual_logs | length }})
+  </button>
+  <button class="tk-btn tk-btn-ghost tk-btn-sm filtro-btn" data-tipo="checklist">
+    <i class="bi bi-check2-circle"></i> Checklist / retroativo ({{ checklist_logs | length }})
+  </button>
+</div>
+
+<div class="tk-card">
+
+  {# Lançamentos manuais #}
+  {% for log in manual_logs %}
+  <div class="tk-extrato-item hist-item" data-tipo="manual">
+    <div class="tk-extrato-icon" style="background:rgba(124,58,237,0.15);">⭐</div>
+    <div style="flex:1; min-width:0;">
+      <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+        <span style="font-weight:700; font-size:0.9rem;">{{ log.activity_type.name }}</span>
+        <span class="tk-badge tk-badge-lider" style="font-size:0.65rem;">manual</span>
+      </div>
+      <div style="font-size:0.78rem; color:var(--text-muted); font-weight:600; margin-top:3px;
+                  display:flex; gap:12px; flex-wrap:wrap;">
+        <span>
+          <i class="bi bi-person-fill"></i>
+          {{ log.junior.name }}
+        </span>
+        <span>
+          <i class="bi bi-person-badge-fill"></i>
+          por {{ log.launcher.name }}
+        </span>
+        <span>
+          <i class="bi bi-calendar3"></i>
+          {{ log.created_at.strftime('%d/%m/%Y às %H:%M') }}
+        </span>
+        {% if log.notes %}
+        <span style="color:var(--text-soft);">
+          <i class="bi bi-chat-text"></i> {{ log.notes }}
+        </span>
+        {% endif %}
+      </div>
+    </div>
+    <div style="display:flex; flex-direction:column; align-items:flex-end; gap:4px; flex-shrink:0;">
+      <div class="tk-extrato-pts">+{{ log.premiles_awarded }}</div>
+      {# Botão excluir com confirmação #}
+      <form method="POST" action="{{ url_for('lider.excluir_lancamento', log_id=log.id) }}"
+            onsubmit="return confirm('Excluir este lançamento? Os Premiles serão revertidos.')">
+        <button type="submit"
+                style="background:none; border:none; cursor:pointer;
+                       font-size:0.75rem; color:var(--text-muted); padding:0;"
+                title="Excluir lançamento">
+          <i class="bi bi-trash"></i>
+        </button>
+      </form>
+    </div>
+  </div>
+  {% endfor %}
+
+  {# Logs de checklist (incluindo retroativos) #}
+  {% for log in checklist_logs %}
+  <div class="tk-extrato-item hist-item" data-tipo="checklist">
+    <div class="tk-extrato-icon"
+         style="background:{% if log.credited_by %}rgba(249,115,22,0.15){% else %}rgba(16,185,129,0.15){% endif %};">
+      {% if log.credited_by %}🔧{% else %}✅{% endif %}
+    </div>
+    <div style="flex:1; min-width:0;">
+      <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+        <span style="font-weight:700; font-size:0.9rem;">{{ log.activity_type.name }}</span>
+        <span class="tk-badge {% if log.credited_by %}tk-badge-lider{% else %}tk-badge-junior{% endif %}"
+              style="font-size:0.65rem;">
+          {% if log.credited_by %}retroativo{% else %}checklist{% endif %}
+        </span>
+      </div>
+      <div style="font-size:0.78rem; color:var(--text-muted); font-weight:600; margin-top:3px;
+                  display:flex; gap:12px; flex-wrap:wrap;">
+        <span><i class="bi bi-person-fill"></i> {{ log.junior.name }}</span>
+        <span><i class="bi bi-calendar3"></i> {{ log.activity_date.strftime('%d/%m/%Y') }}</span>
+        {% if log.credited_by %}
+        <span><i class="bi bi-person-badge-fill"></i> por {{ log.credited_by_user.name }}</span>
+        {% endif %}
+        <span style="color:var(--text-muted);">
+          <i class="bi bi-clock"></i> {{ log.created_at.strftime('%H:%M') }}
+        </span>
+      </div>
+    </div>
+    <div class="tk-extrato-pts">+{{ log.premiles_awarded }}</div>
+  </div>
+  {% endfor %}
+
+  {% if not manual_logs and not checklist_logs %}
+  <div style="text-align:center; padding:48px; color:var(--text-muted); font-weight:600;">
+    <i class="bi bi-clock-history" style="font-size:2rem; display:block; margin-bottom:12px;"></i>
+    Nenhuma atividade registrada ainda.
+  </div>
+  {% endif %}
+
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.querySelectorAll('.filtro-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.filtro-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const tipo = btn.dataset.tipo;
+    document.querySelectorAll('.hist-item').forEach(item => {
+      item.style.display = (tipo === 'todos' || item.dataset.tipo === tipo) ? '' : 'none';
+    });
+  });
+});
+</script>
+{% endblock %}
