@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+{% block title %}{{ periodo.name }} — Histórico{% endblock %}
+
+{% block content %}
+
+<div class="tk-topbar">
+  <div>
+    <a href="{{ url_for('periodo.index') }}"
+       style="font-size:0.8rem; color:var(--text-muted); font-weight:700;
+              text-decoration:none; display:flex; align-items:center; gap:5px; margin-bottom:8px;">
+      <i class="bi bi-arrow-left"></i> Períodos
+    </a>
+    <div class="tk-page-title">{{ periodo.name }}</div>
+    <div class="tk-page-subtitle">
+      {{ periodo.start_date.strftime('%d/%m/%Y') }} →
+      {{ periodo.end_date.strftime('%d/%m/%Y') if periodo.end_date else 'Em aberto' }}
+      · {{ periodo.duration_days }} dias
+      · Encerrado em {{ periodo.closed_at.strftime('%d/%m/%Y às %H:%M') if periodo.closed_at else '—' }}
+    </div>
+  </div>
+  <div style="display:flex; gap:8px;">
+    <a href="{{ url_for('supervisor.relatorio_pdf') }}" class="tk-btn tk-btn-ghost tk-btn-sm">
+      <i class="bi bi-file-earmark-pdf-fill"></i> PDF
+    </a>
+    <a href="{{ url_for('supervisor.relatorio_excel') }}" class="tk-btn tk-btn-green tk-btn-sm">
+      <i class="bi bi-file-earmark-excel-fill"></i> Excel
+    </a>
+  </div>
+</div>
+
+{# Stats do período #}
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="tk-stat tk-stat-purple">
+      <div class="tk-stat-label">Juniores</div>
+      <div class="tk-stat-value">{{ ranking | length }}</div>
+      <div class="tk-stat-sub">participantes</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="tk-stat tk-stat-orange">
+      <div class="tk-stat-label">Total geral</div>
+      <div class="tk-stat-value">{{ ranking | sum(attribute='total_premiles') }}</div>
+      <div class="tk-stat-sub">Premiles acumulados</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="tk-stat tk-stat-cyan">
+      <div class="tk-stat-label">Maior saldo</div>
+      <div class="tk-stat-value">{{ ranking[0].total_premiles if ranking else 0 }}</div>
+      <div class="tk-stat-sub">{{ ranking[0].junior.name.split()[0] if ranking else '—' }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="tk-stat tk-stat-green">
+      <div class="tk-stat-label">Duração</div>
+      <div class="tk-stat-value">{{ periodo.duration_days }}</div>
+      <div class="tk-stat-sub">dias</div>
+    </div>
+  </div>
+</div>
+
+{# Pódio — top 3 geral #}
+{% if ranking | length >= 3 %}
+<div class="tk-card mb-4">
+  <div style="font-size:0.72rem; font-weight:800; letter-spacing:1px;
+              text-transform:uppercase; color:var(--text-muted); margin-bottom:16px;">
+    Pódio geral
+  </div>
+  <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; align-items:end;">
+
+    {# 2º lugar #}
+    <div style="text-align:center; background:var(--bg-card2); border:1px solid var(--border);
+                border-radius:var(--radius-md); padding:16px 8px;">
+      <div style="font-size:1.8rem; margin-bottom:6px;">🥈</div>
+      <div class="tk-avatar av-junior" style="width:40px; height:40px; margin:0 auto 8px; font-size:1rem;">
+        {{ ranking[1].junior.name[0].upper() }}
+      </div>
+      <div style="font-weight:800; font-size:0.88rem;">{{ ranking[1].junior.name.split()[0] }}</div>
+      <div style="font-size:0.72rem; color:var(--text-muted); margin:3px 0 8px;">
+        {{ ranking[1].pgm.name if ranking[1].pgm else '—' }}
+      </div>
+      <span class="tk-premiles" style="font-size:0.85rem;">⭐ {{ ranking[1].total_premiles }}</span>
+    </div>
+
+    {# 1º lugar #}
+    <div style="text-align:center; background:var(--bg-card2);
+                border:1px solid rgba(251,191,36,0.4); border-radius:var(--radius-md);
+                padding:20px 8px;
+                box-shadow:0 0 0 1px rgba(251,191,36,0.15), 0 8px 32px rgba(251,191,36,0.1);">
+      <div style="font-size:2.2rem; margin-bottom:6px;">👑</div>
+      <div class="tk-avatar av-junior"
+           style="width:48px; height:48px; margin:0 auto 8px; font-size:1.2rem;
+                  box-shadow:0 0 0 3px rgba(251,191,36,0.4);">
+        {{ ranking[0].junior.name[0].upper() }}
+      </div>
+      <div style="font-weight:900; font-size:0.95rem;">{{ ranking[0].junior.name.split()[0] }}</div>
+      <div style="font-size:0.72rem; color:var(--text-muted); margin:3px 0 8px;">
+        {{ ranking[0].pgm.name if ranking[0].pgm else '—' }}
+      </div>
+      <span class="tk-premiles" style="font-size:0.95rem; color:#fbbf24;">⭐ {{ ranking[0].total_premiles }}</span>
+    </div>
+
+    {# 3º lugar #}
+    <div style="text-align:center; background:var(--bg-card2); border:1px solid var(--border);
+                border-radius:var(--radius-md); padding:16px 8px;">
+      <div style="font-size:1.8rem; margin-bottom:6px;">🥉</div>
+      <div class="tk-avatar av-junior" style="width:40px; height:40px; margin:0 auto 8px; font-size:1rem;">
+        {{ ranking[2].junior.name[0].upper() }}
+      </div>
+      <div style="font-weight:800; font-size:0.88rem;">{{ ranking[2].junior.name.split()[0] }}</div>
+      <div style="font-size:0.72rem; color:var(--text-muted); margin:3px 0 8px;">
+        {{ ranking[2].pgm.name if ranking[2].pgm else '—' }}
+      </div>
+      <span class="tk-premiles" style="font-size:0.85rem;">⭐ {{ ranking[2].total_premiles }}</span>
+    </div>
+
+  </div>
+</div>
+{% endif %}
+
+{# Classificação por PGM #}
+{% for nome_pgm, snaps in por_pgm.items() %}
+<div class="tk-card mb-3">
+  <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+    <div style="font-size:0.9rem; font-weight:800; color:#a78bfa;">📋 {{ nome_pgm }}</div>
+    <div style="font-size:0.78rem; color:var(--text-muted); font-weight:600;">
+      Total: <span style="color:#fbbf24; font-weight:800;">
+        ⭐ {{ snaps | sum(attribute='total_premiles') }}
+      </span>
+    </div>
+  </div>
+
+  <table class="tk-table">
+    <thead>
+      <tr>
+        <th style="width:48px;">Pos.</th>
+        <th>Júnior</th>
+        <th>No PGM</th>
+        <th>Premiles</th>
+        <th>Barra</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% set max_pts = snaps[0].total_premiles if snaps and snaps[0].total_premiles > 0 else 1 %}
+      {% for snap in snaps %}
+      {% set pct = ((snap.total_premiles / max_pts) * 100) | int %}
+      <tr>
+        <td>
+          {% if snap.position == 1 %}👑
+          {% elif snap.position == 2 %}🥈
+          {% elif snap.position == 3 %}🥉
+          {% else %}
+          <span style="font-size:0.85rem; color:var(--text-muted); font-weight:700;">
+            {{ snap.position }}º
+          </span>
+          {% endif %}
+        </td>
+        <td>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <div class="tk-avatar av-junior">{{ snap.junior.name[0].upper() }}</div>
+            <span style="font-weight:700;">{{ snap.junior.name }}</span>
+          </div>
+        </td>
+        <td>
+          <span style="font-size:0.8rem; color:var(--text-muted); font-weight:700;">
+            {{ snap.pgm_position }}º no grupo
+          </span>
+        </td>
+        <td>
+          <span class="tk-premiles">⭐ {{ snap.total_premiles }}</span>
+        </td>
+        <td style="width:120px;">
+          <div style="background:var(--bg-card2); border-radius:20px; height:6px; overflow:hidden;">
+            <div style="height:6px; border-radius:20px; width:{{ pct }}%;
+                        background:{% if snap.position == 1 %}linear-gradient(90deg,#f59e0b,#fbbf24)
+                                   {% elif snap.position == 2 %}linear-gradient(90deg,#6b7280,#9ca3af)
+                                   {% elif snap.position == 3 %}linear-gradient(90deg,#92400e,#b47c3c)
+                                   {% else %}var(--grad-purple){% endif %};">
+            </div>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endfor %}
+
+{% if not ranking %}
+<div class="tk-card" style="text-align:center; padding:40px;">
+  <i class="bi bi-archive" style="font-size:2rem; color:var(--text-muted); display:block; margin-bottom:10px;"></i>
+  <div style="color:var(--text-muted); font-weight:600;">
+    Nenhum dado arquivado para este período.
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}

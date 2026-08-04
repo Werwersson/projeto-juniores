@@ -326,3 +326,104 @@ def excluir_lancamento(log_id: int):
     db.session.commit()
     flash(f"Lançamento excluído e {log.premiles_awarded} Premiles revertidos.", "info")
     return redirect(url_for("lider.historico"))
+
+
+# ── Validação de resumos de leitura ──────────────────────────────────────────
+
+@lider_bp.route("/resumos")
+@login_required
+@requires_role(UserRole.SUPERVISOR, UserRole.LIDER)
+def resumos():
+    """Lista todos os resumos pendentes de validação do PGM."""
+    from app.models.activity import ChecklistLog, SummaryStatus
+
+    filtro = request.args.get("filtro", "pendente")
+
+    if current_user.is_supervisor:
+        query = db.select(ChecklistLog).where(
+            ChecklistLog.summary != None  # noqa: E711
+        )
+    else:
+        pgm_ids = [pl.pgm_id for pl in current_user.led_pgms]
+        junior_ids = [
+            u.id for u in db.session.execute(
+                db.select(User).where(
+                    User.role == UserRole.JUNIOR,
+                    User.pgm_id.in_(pgm_ids)
+                )
+            ).scalars().all()
+        ]
+        query = db.select(ChecklistLog).where(
+            ChecklistLog.junior_id.in_(junior_ids),
+            ChecklistLog.summary != None  # noqa: E711
+        )
+
+    # Aplica filtro de status
+    if filtro == "pendente":
+        query = query.where(ChecklistLog.summary_status == SummaryStatus.PENDENTE)
+    elif filtro == "aprovado":
+        query = query.where(ChecklistLog.summary_status == SummaryStatus.APROVADO)
+    elif filtro == "rejeitado":
+        query = query.where(ChecklistLog.summary_status == SummaryStatus.REJEITADO)
+
+    logs = db.session.execute(
+        query.order_by(ChecklistLog.created_at.desc())
+    ).scalars().all()
+
+    # Conta pendentes para badge
+    pendentes = db.session.execute(
+        db.select(db.func.count(ChecklistLog.id)).where(
+            ChecklistLog.summary != None,  # noqa: E711
+            ChecklistLog.summary_status == SummaryStatus.PENDENTE
+        )
+    ).scalar()
+
+    return render_template("lider/resumos.html",
+                           logs=logs, filtro=filtro, pendentes=pendentes)
+
+
+@lider_bp.route("/resumos/<int:log_id>/validar", methods=["POST"])
+@login_required
+@requires_role(UserRole.SUPERVISOR, UserRole.LIDER)
+def validar_resumo(log_id: int):
+    from app.models.activity import ChecklistLog, SummaryStatus
+    from datetime import datetime
+
+    log = db.get_or_404(ChecklistLog, log_id)
+
+    # Segurança: verifica acesso ao júnior
+    junior = db.session.get(User, log.junior_id)
+    if not current_user.is_supervisor and not current_user.manages_pgm(junior.pgm_id):
+        flash("Acesso negado.", "danger")
+        return redirect(url_for("lider.resumos"))
+
+    acao = request.form.get("acao")  # "aprovar" ou "rejeitar"
+    nota = request.form.get("nota", "").strip()
+
+    if acao == "aprovar":
+        log.summary_status = SummaryStatus.APROVADO
+        log.validated_by   = current_user.id
+        log.validator_note = nota or None
+        log.validated_at   = datetime.now()
+        flash(f"✅ Leitura de {junior.name} aprovada!", "success")
+
+    elif acao == "rejeitar":
+        log.summary_status = SummaryStatus.REJEITADO
+        log.validated_by   = current_user.id
+        log.validator_note = nota or "Resumo insuficiente. Por favor, reescreva com mais detalhes."
+        log.validated_at   = datetime.now()
+
+        # Reverte os Premiles ao rejeitar
+        if junior.balance and junior.balance.total_balance >= log.premiles_awarded:
+            junior.balance.total_balance -= log.premiles_awarded
+        flash(f"❌ Leitura de {junior.name} rejeitada. Premiles revertidos.", "warning")
+
+    else:
+        flash("Ação inválida.", "danger")
+        return redirect(url_for("lider.resumos"))
+
+    db.session.commit()
+
+    # Volta para o filtro atual
+    filtro = request.form.get("filtro", "pendente")
+    return redirect(url_for("lider.resumos", filtro=filtro))

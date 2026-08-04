@@ -13,6 +13,53 @@
   </span>
 </div>
 
+{# Card período ativo #}
+{% if periodo_ativo %}
+<div class="tk-card mb-4" style="border-color:rgba(16,185,129,0.35);">
+  <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
+    <div style="display:flex; align-items:center; gap:12px;">
+      <div style="width:10px; height:10px; border-radius:50%; background:#10b981;
+                  box-shadow:0 0 0 3px rgba(16,185,129,0.3); flex-shrink:0;
+                  animation:tkpulse-soft 1.5s ease infinite alternate;"></div>
+      <div>
+        <div style="font-size:0.72rem; font-weight:800; letter-spacing:1px;
+                    text-transform:uppercase; color:#6ee7b7; margin-bottom:2px;">
+          Período ativo
+        </div>
+        <div style="font-weight:900; font-size:1rem; color:#fff;">{{ periodo_ativo.name }}</div>
+        <div style="font-size:0.75rem; color:var(--text-muted); font-weight:600; margin-top:2px;">
+          Iniciado em {{ periodo_ativo.start_date.strftime('%d/%m/%Y') }}
+          · {{ periodo_ativo.duration_days }} dia{{ 's' if periodo_ativo.duration_days != 1 else '' }}
+          {% if periodo_ativo.end_date %}
+            · Término previsto: {{ periodo_ativo.end_date.strftime('%d/%m/%Y') }}
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    <a href="{{ url_for('period.index') }}" class="tk-btn tk-btn-ghost tk-btn-sm">
+      <i class="bi bi-calendar2-check-fill"></i> Gerenciar período
+    </a>
+  </div>
+</div>
+{% else %}
+<div class="tk-card mb-4" style="border-color:rgba(249,115,22,0.25);">
+  <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
+    <div style="display:flex; align-items:center; gap:10px;">
+      <i class="bi bi-exclamation-triangle-fill" style="color:#fbbf24; font-size:1.1rem;"></i>
+      <div>
+        <div style="font-weight:800; font-size:0.88rem;">Nenhum período ativo</div>
+        <div style="font-size:0.78rem; color:var(--text-muted); font-weight:600; margin-top:2px;">
+          Os Premiles estão sendo acumulados sem um ciclo definido.
+        </div>
+      </div>
+    </div>
+    <a href="{{ url_for('period.index') }}" class="tk-btn tk-btn-purple tk-btn-sm">
+      <i class="bi bi-play-circle-fill"></i> Iniciar período
+    </a>
+  </div>
+</div>
+{% endif %}
+
 {# Stats globais — calculados no lado do servidor via Jinja #}
 {% set total_juniors = [] %}
 {% set total_leaders = [] %}
@@ -46,11 +93,44 @@
   <div class="col-6 col-md-3">
     <div class="tk-stat tk-stat-orange">
       <div class="tk-stat-label">Premiles hoje</div>
-      <div class="tk-stat-value">—</div>
+      <div class="tk-stat-value">{{ premiles_hoje }}</div>
       <div class="tk-stat-sub">creditados hoje</div>
     </div>
   </div>
 </div>
+
+{# Banner período ativo #}
+{% if periodo_ativo %}
+<div class="tk-card mb-4" style="border-color:rgba(16,185,129,0.3); padding:14px 20px;">
+  <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
+    <div style="display:flex; align-items:center; gap:10px;">
+      <div style="width:8px; height:8px; border-radius:50%; background:#10b981;
+                  box-shadow:0 0 0 3px rgba(16,185,129,0.25);"></div>
+      <div>
+        <span style="font-size:0.8rem; font-weight:800; color:#6ee7b7;">Período ativo: </span>
+        <span style="font-size:0.88rem; font-weight:700; color:#fff;">{{ periodo_ativo.name }}</span>
+        <span style="font-size:0.78rem; color:var(--text-muted); font-weight:600; margin-left:8px;">
+          desde {{ periodo_ativo.start_date.strftime('%d/%m/%Y') }}
+          {% if periodo_ativo.end_date %}
+            · até {{ periodo_ativo.end_date.strftime('%d/%m/%Y') }}
+          {% endif %}
+        </span>
+      </div>
+    </div>
+    <a href="{{ url_for('periodo.index') }}" class="tk-btn tk-btn-ghost tk-btn-sm">
+      <i class="bi bi-calendar-range-fill"></i> Gerenciar
+    </a>
+  </div>
+</div>
+{% else %}
+<div class="tk-alert tk-alert-warning mb-3">
+  <i class="bi bi-exclamation-triangle-fill"></i>
+  Nenhum período ativo.
+  <a href="{{ url_for('periodo.index') }}" style="color:#fbbf24; font-weight:800; margin-left:4px;">
+    Criar período →
+  </a>
+</div>
+{% endif %}
 
 {# PGM cards #}
 <div class="d-flex align-items-center justify-content-between mb-3" id="pgms">

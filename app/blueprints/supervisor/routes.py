@@ -12,8 +12,28 @@ from app import db
 @login_required
 @requires_role(UserRole.SUPERVISOR)
 def dashboard():
+    from app.services.period_service import get_active_period
+    from app.models.activity import ChecklistLog, ManualLog
+    from datetime import date as _date
+
     pgms = db.session.execute(db.select(PGM)).scalars().all()
-    return render_template("supervisor/dashboard.html", pgms=pgms)
+    periodo_ativo = get_active_period()
+
+    # Premiles creditados hoje
+    hoje = _date.today()
+    premiles_hoje = db.session.execute(
+        db.select(db.func.sum(ManualLog.premiles_awarded))
+        .where(db.func.date(ManualLog.created_at) == hoje)
+    ).scalar() or 0
+    premiles_hoje += db.session.execute(
+        db.select(db.func.sum(ChecklistLog.premiles_awarded))
+        .where(ChecklistLog.activity_date == hoje)
+    ).scalar() or 0
+
+    return render_template("supervisor/dashboard.html",
+                           pgms=pgms,
+                           periodo_ativo=periodo_ativo,
+                           premiles_hoje=premiles_hoje)
 
 
 @supervisor_bp.route("/pgm/<int:pgm_id>")
@@ -55,51 +75,56 @@ def novo_usuario():
     pgms = db.session.execute(db.select(PGM).order_by(PGM.name)).scalars().all()
 
     if request.method == "POST":
-        name = request.form.get("name", "").strip()
-        email = request.form.get("email", "").strip().lower()
-        role = request.form.get("role")
-        pgm_id = request.form.get("pgm_id") or None
+        name     = request.form.get("name", "").strip()
+        username = request.form.get("username", "").strip().lower()
+        email    = request.form.get("email", "").strip().lower() or None
+        role     = request.form.get("role")
+        pgm_id   = request.form.get("pgm_id") or None
         password = request.form.get("password", "").strip()
 
-        # Validações
         errors = []
         if not name:
-            errors.append("Nome é obrigatório.")
-        if not email:
-            errors.append("E-mail é obrigatório.")
+            errors.append("Nome completo é obrigatório.")
+        if not username:
+            errors.append("Nome de usuário é obrigatório.")
+        if len(username) < 3:
+            errors.append("Nome de usuário deve ter ao menos 3 caracteres.")
         if role not in [r.value for r in UserRole]:
             errors.append("Papel inválido.")
         if not password or len(password) < 6:
             errors.append("Senha deve ter ao menos 6 caracteres.")
 
-        existing = db.session.execute(
+        # Verifica username duplicado
+        if username and db.session.execute(
+            db.select(User).where(User.username == username)
+        ).scalar_one_or_none():
+            errors.append(f'O nome de usuário "{username}" já está em uso.')
+
+        # Verifica email duplicado (só se preenchido)
+        if email and db.session.execute(
             db.select(User).where(User.email == email)
-        ).scalar_one_or_none()
-        if existing:
+        ).scalar_one_or_none():
             errors.append("Já existe um usuário com este e-mail.")
 
         if errors:
             for e in errors:
                 flash(e, "danger")
             return render_template("supervisor/form_usuario.html",
-                                   pgms=pgms, modo="novo",
-                                   form=request.form)
+                                   pgms=pgms, modo="novo", form=request.form)
 
         user = User(
             name=name,
+            username=username,
             email=email,
             role=UserRole(role),
             pgm_id=int(pgm_id) if pgm_id and role == UserRole.JUNIOR.value else None,
         )
         user.set_password(password)
         db.session.add(user)
-        db.session.flush()  # gera o ID
+        db.session.flush()
 
-        # Se for júnior, cria o saldo zerado
         if user.role == UserRole.JUNIOR:
             db.session.add(PremilesBalance(junior_id=user.id, total_balance=0))
-
-        # Se for líder, vincula ao PGM escolhido
         if user.role == UserRole.LIDER and pgm_id:
             db.session.add(PGMLeader(user_id=user.id, pgm_id=int(pgm_id)))
 
@@ -119,21 +144,26 @@ def editar_usuario(user_id):
     pgms = db.session.execute(db.select(PGM).order_by(PGM.name)).scalars().all()
 
     if request.method == "POST":
-        name = request.form.get("name", "").strip()
-        email = request.form.get("email", "").strip().lower()
-        pgm_id = request.form.get("pgm_id") or None
+        name       = request.form.get("name", "").strip()
+        username   = request.form.get("username", "").strip().lower()
+        email      = request.form.get("email", "").strip().lower() or None
+        pgm_id     = request.form.get("pgm_id") or None
         nova_senha = request.form.get("password", "").strip()
 
         errors = []
         if not name:
-            errors.append("Nome é obrigatório.")
-        if not email:
-            errors.append("E-mail é obrigatório.")
+            errors.append("Nome completo é obrigatório.")
+        if not username or len(username) < 3:
+            errors.append("Nome de usuário deve ter ao menos 3 caracteres.")
 
-        conflito = db.session.execute(
+        if username and db.session.execute(
+            db.select(User).where(User.username == username, User.id != user_id)
+        ).scalar_one_or_none():
+            errors.append(f'O nome de usuário "{username}" já está em uso.')
+
+        if email and db.session.execute(
             db.select(User).where(User.email == email, User.id != user_id)
-        ).scalar_one_or_none()
-        if conflito:
+        ).scalar_one_or_none():
             errors.append("Já existe outro usuário com este e-mail.")
 
         if errors:
@@ -143,8 +173,9 @@ def editar_usuario(user_id):
                                    pgms=pgms, modo="editar",
                                    user=user, form=request.form)
 
-        user.name = name
-        user.email = email
+        user.name     = name
+        user.username = username
+        user.email    = email
 
         # Atualiza PGM do júnior
         if user.role == UserRole.JUNIOR and pgm_id:

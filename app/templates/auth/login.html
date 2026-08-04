@@ -1,24 +1,24 @@
 {% extends "base.html" %}
-
 {% block title %}Entrar — TeoK!ds.{% endblock %}
 
 {% block content %}
 <div class="tk-login-bg">
   <div class="tk-login-card">
 
-    {# Logo #}
     <div style="text-align:center; margin-bottom:32px;">
-      <div class="tk-logo-text" style="font-size:2rem;">TeoK<span style="-webkit-text-fill-color:#fff">!</span>ds<span style="-webkit-text-fill-color:#fff">.</span></div>
-      <div style="font-size:0.72rem; color:var(--text-muted); font-weight:700; letter-spacing:1.5px; margin-top:6px;">
+      <div class="tk-logo-text" style="font-size:2rem;">
+        TeoK<span style="-webkit-text-fill-color:#fff">!</span>ds<span style="-webkit-text-fill-color:#fff">.</span>
+      </div>
+      <div style="font-size:0.72rem; color:var(--text-muted); font-weight:700;
+                  letter-spacing:1.5px; margin-top:6px;">
         PROJETO JUNIORES
       </div>
     </div>
 
-    {# Flash messages #}
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
         {% for category, message in messages %}
-          <div class="tk-alert tk-alert-{{ category }}">
+          <div class="tk-alert tk-alert-{{ category }}" style="margin-bottom:12px;">
             <i class="bi bi-x-circle-fill"></i> {{ message }}
           </div>
         {% endfor %}
@@ -26,10 +26,12 @@
     {% endwith %}
 
     <form method="POST" action="{{ url_for('auth.login') }}">
+
       <div style="margin-bottom:18px;">
-        <label class="tk-label" for="email">E-mail</label>
-        <input class="tk-input" type="email" id="email" name="email"
-               placeholder="seu@email.com" required autocomplete="email" />
+        <label class="tk-label" for="username">Nome de usuário</label>
+        <input class="tk-input" type="text" id="username" name="username"
+               placeholder="seu.usuario" required autocomplete="username"
+               style="text-transform:lowercase;" />
       </div>
 
       <div style="margin-bottom:24px;">
@@ -47,13 +49,15 @@
         </label>
       </div>
 
-      <button type="submit" class="tk-btn tk-btn-purple" style="width:100%; justify-content:center; padding:13px;">
+      <button type="submit" class="tk-btn tk-btn-purple"
+              style="width:100%; justify-content:center; padding:13px;">
         <i class="bi bi-arrow-right-circle-fill"></i>
         Entrar
       </button>
     </form>
 
-    <div style="text-align:center; margin-top:24px; font-size:0.78rem; color:var(--text-muted); font-weight:600;">
+    <div style="text-align:center; margin-top:24px; font-size:0.78rem;
+                color:var(--text-muted); font-weight:600;">
       Fale com seu líder se precisar de acesso.
     </div>
 

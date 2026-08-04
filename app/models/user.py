@@ -6,33 +6,34 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 class UserRole(str, enum.Enum):
     SUPERVISOR = "supervisor"
-    LIDER = "lider"
-    JUNIOR = "junior"
+    LIDER      = "lider"
+    JUNIOR     = "junior"
 
 
 class User(UserMixin, db.Model):
     __tablename__ = "users"
 
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(120), nullable=False)
-    email = db.Column(db.String(120), unique=True, nullable=False, index=True)
+    id            = db.Column(db.Integer, primary_key=True)
+    name          = db.Column(db.String(120), nullable=False)          # Nome exibido
+    username      = db.Column(db.String(60), unique=True, nullable=False, index=True)  # Login
+    email         = db.Column(db.String(120), unique=True, nullable=True, index=True)  # Opcional
     password_hash = db.Column(db.String(256), nullable=False)
-    role = db.Column(db.Enum(UserRole), nullable=False, default=UserRole.JUNIOR)
-    pgm_id = db.Column(db.Integer, db.ForeignKey("pgms.id"), nullable=True)
-    created_at = db.Column(db.DateTime, server_default=db.func.now())
+    role          = db.Column(db.Enum(UserRole), nullable=False, default=UserRole.JUNIOR)
+    pgm_id        = db.Column(db.Integer, db.ForeignKey("pgms.id"), nullable=True)
+    created_at    = db.Column(db.DateTime, server_default=db.func.now())
 
-    # Relacionamentos com cascade para deletar dependências automaticamente
-    pgm = db.relationship("PGM", back_populates="juniors", foreign_keys=[pgm_id])
-    led_pgms = db.relationship("PGMLeader", back_populates="leader",
-                               cascade="all, delete-orphan")
-    balance = db.relationship("PremilesBalance", back_populates="junior",
-                              uselist=False, cascade="all, delete-orphan")
+    # Relacionamentos com cascade
+    pgm           = db.relationship("PGM", back_populates="juniors", foreign_keys=[pgm_id])
+    led_pgms      = db.relationship("PGMLeader", back_populates="leader",
+                                    cascade="all, delete-orphan")
+    balance       = db.relationship("PremilesBalance", back_populates="junior",
+                                    uselist=False, cascade="all, delete-orphan")
     checklist_logs = db.relationship("ChecklistLog", back_populates="junior",
                                      foreign_keys="ChecklistLog.junior_id",
                                      cascade="all, delete-orphan")
-    manual_logs = db.relationship("ManualLog", back_populates="junior",
-                                  foreign_keys="ManualLog.junior_id",
-                                  cascade="all, delete-orphan")
+    manual_logs   = db.relationship("ManualLog", back_populates="junior",
+                                    foreign_keys="ManualLog.junior_id",
+                                    cascade="all, delete-orphan")
 
     def set_password(self, password: str) -> None:
         self.password_hash = generate_password_hash(password)
@@ -60,7 +61,7 @@ class User(UserMixin, db.Model):
         return False
 
     def __repr__(self) -> str:
-        return f"<User {self.name} [{self.role}]>"
+        return f"<User {self.username} [{self.role}]>"
 
 
 @login_manager.user_loader

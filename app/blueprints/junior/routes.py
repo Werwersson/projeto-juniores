@@ -3,7 +3,8 @@ from flask_login import login_required, current_user
 from app.blueprints.junior import junior_bp
 from app.decorators import requires_role
 from app.models.user import UserRole
-from app.models.activity import ActivityType, ActivitySource, ChecklistLog, ManualLog, PremilesBalance
+from app.models.activity import (ActivityType, ActivitySource, ChecklistLog,
+                                  ManualLog, PremilesBalance, SummaryStatus)
 from app import db
 from datetime import date
 
@@ -30,38 +31,73 @@ def checklist():
         )
     ).scalars().all()
 
-    already_done_ids = set(
-        row.activity_type_id
+    # Logs de hoje (para saber status de cada atividade)
+    logs_hoje = {
+        row.activity_type_id: row
         for row in db.session.execute(
-            db.select(ChecklistLog.activity_type_id).where(
+            db.select(ChecklistLog).where(
                 ChecklistLog.junior_id == current_user.id,
                 ChecklistLog.activity_date == today,
             )
-        ).all()
+        ).scalars().all()
+    }
+
+    already_done_ids = set(
+        aid for aid, log in logs_hoje.items()
+        if log.summary_status != SummaryStatus.REJEITADO
     )
 
     if request.method == "POST":
         activity_type_id = int(request.form["activity_type_id"])
-
-        if activity_type_id in already_done_ids:
-            flash("Você já marcou esta atividade hoje.", "warning")
-            return redirect(url_for("junior.checklist"))
+        summary = request.form.get("summary", "").strip()
 
         activity = db.get_or_404(ActivityType, activity_type_id)
 
-        # Segurança: confirma que é atividade do tipo junior
         if activity.source != ActivitySource.JUNIOR:
             flash("Atividade inválida.", "danger")
             return redirect(url_for("junior.checklist"))
 
-        # Valor de Premiles vem do campo default_premiles da atividade
+        if activity.requires_summary and not summary:
+            flash("Por favor, escreva um resumo da sua leitura.", "warning")
+            return redirect(url_for("junior.checklist"))
+
+        if activity.requires_summary and len(summary) < 10:
+            flash("Resumo muito curto. Escreva pelo menos 10 caracteres.", "warning")
+            return redirect(url_for("junior.checklist"))
+
         premiles = activity.default_premiles or 10
+
+        # Se foi rejeitado hoje, atualiza o log existente em vez de criar novo
+        log_existente = logs_hoje.get(activity_type_id)
+        if log_existente and log_existente.summary_status == SummaryStatus.REJEITADO:
+            log_existente.summary        = summary
+            log_existente.summary_status = SummaryStatus.PENDENTE
+            log_existente.validated_by   = None
+            log_existente.validator_note = None
+            log_existente.validated_at   = None
+            # Recredita os Premiles que foram revertidos
+            balance = current_user.balance
+            if balance:
+                balance.total_balance += premiles
+            else:
+                db.session.add(PremilesBalance(
+                    junior_id=current_user.id, total_balance=premiles))
+            db.session.commit()
+            flash(f"Resumo reenviado! +{premiles} Premiles creditados novamente. 🎉", "success")
+            return redirect(url_for("junior.checklist"))
+
+        # Checagem de duplicidade normal
+        if activity_type_id in already_done_ids:
+            flash("Você já marcou esta atividade hoje.", "warning")
+            return redirect(url_for("junior.checklist"))
 
         log = ChecklistLog(
             junior_id=current_user.id,
             activity_type_id=activity_type_id,
             activity_date=today,
             premiles_awarded=premiles,
+            summary=summary if summary else None,
+            summary_status=SummaryStatus.PENDENTE if (summary and activity.requires_summary) else None,
             credited_by=None,
         )
         db.session.add(log)
@@ -71,9 +107,7 @@ def checklist():
             balance.total_balance += premiles
         else:
             db.session.add(PremilesBalance(
-                junior_id=current_user.id,
-                total_balance=premiles
-            ))
+                junior_id=current_user.id, total_balance=premiles))
 
         db.session.commit()
         flash(f"+{premiles} Premiles! Continue assim! 🎉", "success")
@@ -83,6 +117,7 @@ def checklist():
         "junior/checklist.html",
         activities=activities,
         already_done_ids=already_done_ids,
+        logs_hoje=logs_hoje,
         today=today,
     )
 
@@ -91,7 +126,6 @@ def checklist():
 @login_required
 @requires_role(UserRole.JUNIOR)
 def extrato():
-    """Histórico completo de Premiles do junior logado. BUG CORRIGIDO: query única."""
     checklist_logs = db.session.execute(
         db.select(ChecklistLog)
         .where(ChecklistLog.junior_id == current_user.id)

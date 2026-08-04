@@ -37,7 +37,7 @@
     <thead>
       <tr>
         <th>Usuário</th>
-        <th>E-mail</th>
+        <th>Usuário</th>
         <th>Papel</th>
         <th>PGM / Grupo</th>
         <th>Premiles</th>
@@ -53,7 +53,7 @@
             <span style="font-weight:700;">{{ u.name }}</span>
           </div>
         </td>
-        <td style="color:var(--text-muted); font-size:0.85rem;">{{ u.email }}</td>
+        <td style="color:var(--text-muted); font-size:0.85rem;">@{{ u.username }}</td>
         <td>
           <span class="tk-badge tk-badge-{{ u.role.value }}">
             {{ u.role.value | capitalize }}

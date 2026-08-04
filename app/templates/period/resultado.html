@@ -1,0 +1,207 @@
+{% extends "base.html" %}
+{% block title %}Resultado — {{ periodo.name }}{% endblock %}
+
+{% block content %}
+
+<div class="tk-topbar">
+  <div>
+    <a href="{{ url_for('period.index') }}"
+       style="font-size:0.8rem; color:var(--text-muted); font-weight:700;
+              text-decoration:none; display:flex; align-items:center;
+              gap:5px; margin-bottom:8px;">
+      <i class="bi bi-arrow-left"></i> Períodos
+    </a>
+    <div class="tk-page-title">{{ periodo.name }}</div>
+    <div class="tk-page-subtitle">
+      {{ periodo.start_date.strftime('%d/%m/%Y') }} →
+      {{ periodo.end_date.strftime('%d/%m/%Y') if periodo.end_date else '—' }}
+      · Encerrado em {{ periodo.closed_at.strftime('%d/%m/%Y às %H:%M') if periodo.closed_at else '—' }}
+    </div>
+  </div>
+
+  {# Botões de exportação #}
+  <div style="display:flex; gap:8px; flex-wrap:wrap;">
+    <a href="{{ url_for('supervisor.relatorio_excel') }}" class="tk-btn tk-btn-ghost tk-btn-sm">
+      <i class="bi bi-file-earmark-excel-fill"></i> Excel
+    </a>
+    <a href="{{ url_for('supervisor.relatorio_pdf') }}" class="tk-btn tk-btn-ghost tk-btn-sm">
+      <i class="bi bi-file-earmark-pdf-fill"></i> PDF
+    </a>
+  </div>
+</div>
+
+{# Stats do período #}
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="tk-stat tk-stat-purple">
+      <div class="tk-stat-label">Participantes</div>
+      <div class="tk-stat-value">{{ snapshots | length }}</div>
+      <div class="tk-stat-sub">juniores</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="tk-stat tk-stat-orange">
+      <div class="tk-stat-label">Total Premiles</div>
+      <div class="tk-stat-value">
+        {{ snapshots | sum(attribute='total_premiles') }}
+      </div>
+      <div class="tk-stat-sub">acumulados</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="tk-stat tk-stat-cyan">
+      <div class="tk-stat-label">Duração</div>
+      <div class="tk-stat-value">{{ periodo.duration_days }}</div>
+      <div class="tk-stat-sub">dias</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="tk-stat tk-stat-green">
+      <div class="tk-stat-label">Campeão</div>
+      <div class="tk-stat-value" style="font-size:1rem; padding-top:4px;">
+        {% if snapshots %}
+          {{ snapshots[0].junior.name.split()[0] }}
+        {% else %}—{% endif %}
+      </div>
+      <div class="tk-stat-sub">1º lugar geral</div>
+    </div>
+  </div>
+</div>
+
+{# Pódio top 3 #}
+{% if snapshots | length >= 3 %}
+<div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px;
+            margin-bottom:28px; align-items:end;">
+
+  {# 2º lugar #}
+  <div class="tk-card" style="text-align:center; border-color:rgba(156,163,175,0.3);">
+    <div style="font-size:2rem; margin-bottom:6px;">🥈</div>
+    <div class="tk-avatar av-junior" style="width:44px; height:44px; font-size:1.1rem; margin:0 auto 8px;">
+      {{ snapshots[1].junior.name[0].upper() }}
+    </div>
+    <div style="font-weight:800; font-size:0.9rem;">{{ snapshots[1].junior.name.split()[0] }}</div>
+    <div style="font-size:0.72rem; color:var(--text-muted); font-weight:600; margin:3px 0 8px;">
+      {{ snapshots[1].pgm.name if snapshots[1].pgm else '—' }}
+    </div>
+    <div style="font-size:1.4rem; font-weight:900; color:#9ca3af;">
+      ⭐ {{ snapshots[1].total_premiles }}
+    </div>
+  </div>
+
+  {# 1º lugar #}
+  <div class="tk-card" style="text-align:center; border-color:rgba(251,191,36,0.4);
+       box-shadow:0 0 0 1px rgba(251,191,36,0.2), 0 8px 32px rgba(251,191,36,0.1);">
+    <div style="font-size:2.5rem; margin-bottom:6px;">👑</div>
+    <div class="tk-avatar av-junior" style="width:52px; height:52px; font-size:1.3rem;
+         margin:0 auto 8px; box-shadow:0 0 0 3px rgba(251,191,36,0.4);">
+      {{ snapshots[0].junior.name[0].upper() }}
+    </div>
+    <div style="font-weight:900; font-size:1rem;">{{ snapshots[0].junior.name.split()[0] }}</div>
+    <div style="font-size:0.72rem; color:var(--text-muted); font-weight:600; margin:3px 0 8px;">
+      {{ snapshots[0].pgm.name if snapshots[0].pgm else '—' }}
+    </div>
+    <div style="font-size:1.7rem; font-weight:900; color:#fbbf24;">
+      ⭐ {{ snapshots[0].total_premiles }}
+    </div>
+  </div>
+
+  {# 3º lugar #}
+  <div class="tk-card" style="text-align:center; border-color:rgba(180,120,60,0.3);">
+    <div style="font-size:2rem; margin-bottom:6px;">🥉</div>
+    <div class="tk-avatar av-junior" style="width:44px; height:44px; font-size:1.1rem; margin:0 auto 8px;">
+      {{ snapshots[2].junior.name[0].upper() }}
+    </div>
+    <div style="font-weight:800; font-size:0.9rem;">{{ snapshots[2].junior.name.split()[0] }}</div>
+    <div style="font-size:0.72rem; color:var(--text-muted); font-weight:600; margin:3px 0 8px;">
+      {{ snapshots[2].pgm.name if snapshots[2].pgm else '—' }}
+    </div>
+    <div style="font-size:1.4rem; font-weight:900; color:#b47c3c;">
+      ⭐ {{ snapshots[2].total_premiles }}
+    </div>
+  </div>
+
+</div>
+{% endif %}
+
+{# Ranking completo por PGM #}
+{% set pgms_vistos = [] %}
+{% for snap in snapshots %}
+  {% if snap.pgm and snap.pgm.id not in pgms_vistos %}
+    {% if pgms_vistos.append(snap.pgm.id) %}{% endif %}
+
+    <div class="tk-card mb-3">
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:16px;">
+        <div style="width:4px; height:24px; border-radius:2px;
+                    background:var(--grad-purple); flex-shrink:0;"></div>
+        <div style="font-weight:900; font-size:1rem;">{{ snap.pgm.name }}</div>
+      </div>
+
+      <table class="tk-table">
+        <thead>
+          <tr>
+            <th style="width:48px;">Pos.</th>
+            <th>Júnior</th>
+            <th>Premiles</th>
+            <th>Ranking geral</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in snapshots if s.pgm_id == snap.pgm.id %}
+          <tr>
+            <td>
+              {% if s.pgm_position == 1 %}🥇
+              {% elif s.pgm_position == 2 %}🥈
+              {% elif s.pgm_position == 3 %}🥉
+              {% else %}
+              <span style="font-size:0.85rem; color:var(--text-muted); font-weight:700;">
+                {{ s.pgm_position }}º
+              </span>
+              {% endif %}
+            </td>
+            <td>
+              <div style="display:flex; align-items:center; gap:10px;">
+                <div class="tk-avatar av-junior">{{ s.junior.name[0].upper() }}</div>
+                <span style="font-weight:700;">{{ s.junior.name }}</span>
+              </div>
+            </td>
+            <td><span class="tk-premiles">⭐ {{ s.total_premiles }}</span></td>
+            <td>
+              <span style="font-size:0.82rem; color:var(--text-muted); font-weight:700;">
+                {{ s.position }}º geral
+              </span>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+  {% endif %}
+{% endfor %}
+
+{# Juniores sem PGM #}
+{% set sem_pgm = snapshots | selectattr('pgm', 'none') | list %}
+{% if sem_pgm %}
+<div class="tk-card mb-3">
+  <div style="font-weight:800; margin-bottom:12px; color:var(--text-muted);">
+    Sem PGM definido
+  </div>
+  {% for s in sem_pgm %}
+  <div style="display:flex; align-items:center; gap:10px; padding:8px 0;
+              border-bottom:1px solid var(--border);">
+    <div class="tk-avatar av-junior">{{ s.junior.name[0].upper() }}</div>
+    <span style="font-weight:700; flex:1;">{{ s.junior.name }}</span>
+    <span class="tk-premiles">⭐ {{ s.total_premiles }}</span>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% if not snapshots %}
+<div class="tk-card" style="text-align:center; padding:48px; color:var(--text-muted);">
+  <i class="bi bi-inbox" style="font-size:2rem; display:block; margin-bottom:12px;"></i>
+  Nenhum dado encontrado para este período.
+</div>
+{% endif %}
+
+{% endblock %}

@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+{% block title %}Resumos de Leitura — TeoK!ds.{% endblock %}
+
+{% block content %}
+
+<div class="tk-topbar">
+  <div>
+    <div class="tk-page-title">
+      Resumos de leitura
+      {% if pendentes > 0 %}
+      <span style="display:inline-flex; align-items:center; justify-content:center;
+                   background:#ef4444; color:#fff; font-size:0.7rem; font-weight:900;
+                   width:20px; height:20px; border-radius:50%; margin-left:8px;
+                   vertical-align:middle;">
+        {{ pendentes }}
+      </span>
+      {% endif %}
+    </div>
+    <div class="tk-page-subtitle">Valide os resumos de leitura bíblica dos juniores</div>
+  </div>
+</div>
+
+{# Filtros #}
+<div style="display:flex; gap:8px; margin-bottom:24px; flex-wrap:wrap;">
+  <a href="{{ url_for('lider.resumos', filtro='pendente') }}"
+     class="tk-btn tk-btn-sm {% if filtro == 'pendente' %}tk-btn-purple{% else %}tk-btn-ghost{% endif %}">
+    <i class="bi bi-hourglass-split"></i> Pendentes
+    {% if pendentes > 0 %}<span style="background:rgba(255,255,255,0.3); padding:1px 6px; border-radius:10px; font-size:0.75rem;">{{ pendentes }}</span>{% endif %}
+  </a>
+  <a href="{{ url_for('lider.resumos', filtro='aprovado') }}"
+     class="tk-btn tk-btn-sm {% if filtro == 'aprovado' %}tk-btn-green{% else %}tk-btn-ghost{% endif %}">
+    <i class="bi bi-check-circle-fill"></i> Aprovados
+  </a>
+  <a href="{{ url_for('lider.resumos', filtro='rejeitado') }}"
+     class="tk-btn tk-btn-sm {% if filtro == 'rejeitado' %}tk-btn-sm{% else %}tk-btn-ghost{% endif %}"
+     style="{% if filtro == 'rejeitado' %}background:rgba(239,68,68,0.2);color:#fca5a5;border:1px solid rgba(239,68,68,0.3);{% endif %}">
+    <i class="bi bi-x-circle-fill"></i> Rejeitados
+  </a>
+  <a href="{{ url_for('lider.resumos', filtro='todos') }}"
+     class="tk-btn tk-btn-ghost tk-btn-sm {% if filtro == 'todos' %}active{% endif %}">
+    Todos ({{ logs | length }})
+  </a>
+</div>
+
+{% if logs %}
+  {% for log in logs %}
+  <div class="tk-card mb-3"
+       style="border-color:
+         {% if log.summary_status.value == 'aprovado' %}rgba(16,185,129,0.3)
+         {% elif log.summary_status.value == 'rejeitado' %}rgba(239,68,68,0.3)
+         {% else %}rgba(251,191,36,0.3){% endif %};">
+
+    {# Cabeçalho do card #}
+    <div style="display:flex; align-items:center; justify-content:space-between;
+                flex-wrap:wrap; gap:12px; margin-bottom:16px;">
+      <div style="display:flex; align-items:center; gap:12px;">
+        <div class="tk-avatar av-junior" style="width:38px; height:38px; font-size:0.95rem;">
+          {{ log.junior.name[0].upper() }}
+        </div>
+        <div>
+          <div style="font-weight:800; font-size:0.95rem;">{{ log.junior.name }}</div>
+          <div style="font-size:0.75rem; color:var(--text-muted); font-weight:600; margin-top:2px;">
+            <i class="bi bi-calendar3"></i> {{ log.activity_date.strftime('%d/%m/%Y') }}
+            · {{ log.activity_type.name }}
+            · <i class="bi bi-people-fill"></i> {{ log.junior.pgm.name if log.junior.pgm else '—' }}
+          </div>
+        </div>
+      </div>
+
+      {# Badge de status #}
+      {% if log.summary_status.value == 'pendente' %}
+        <span class="tk-badge" style="background:rgba(251,191,36,0.15); color:#fbbf24;">
+          <i class="bi bi-hourglass-split me-1"></i> Pendente
+        </span>
+      {% elif log.summary_status.value == 'aprovado' %}
+        <span class="tk-badge tk-badge-junior">
+          <i class="bi bi-check-circle-fill me-1"></i> Aprovado
+        </span>
+      {% else %}
+        <span class="tk-badge" style="background:rgba(239,68,68,0.15); color:#fca5a5;">
+          <i class="bi bi-x-circle-fill me-1"></i> Rejeitado
+        </span>
+      {% endif %}
+    </div>
+
+    {# Resumo do júnior #}
+    <div style="background:var(--bg-card2); border-radius:var(--radius-sm);
+                padding:16px; margin-bottom:16px; border-left:3px solid
+                {% if log.summary_status.value == 'aprovado' %}#10b981
+                {% elif log.summary_status.value == 'rejeitado' %}#ef4444
+                {% else %}#fbbf24{% endif %};">
+      <div style="font-size:0.7rem; font-weight:800; letter-spacing:1px;
+                  text-transform:uppercase; color:var(--text-muted); margin-bottom:8px;">
+        Resumo do júnior
+      </div>
+      <p style="font-size:0.9rem; color:var(--text); font-weight:600;
+                line-height:1.7; margin:0; white-space:pre-wrap;">{{ log.summary }}</p>
+    </div>
+
+    {# Feedback anterior (se já validado) #}
+    {% if log.validator_note and log.summary_status.value != 'pendente' %}
+    <div style="background:rgba(124,58,237,0.08); border:1px solid rgba(124,58,237,0.2);
+                border-radius:var(--radius-sm); padding:12px 16px; margin-bottom:16px;
+                font-size:0.83rem; color:var(--text-soft); font-weight:600;">
+      <i class="bi bi-chat-quote-fill" style="color:#a78bfa;"></i>
+      <strong style="color:#a78bfa;">
+        Feedback de {{ log.validator.name if log.validator else 'Líder' }}
+        {% if log.validated_at %}· {{ log.validated_at.strftime('%d/%m %H:%M') }}{% endif %}:
+      </strong>
+      {{ log.validator_note }}
+    </div>
+    {% endif %}
+
+    {# Ações — só para pendentes #}
+    {% if log.summary_status.value == 'pendente' %}
+    <form method="POST" action="{{ url_for('lider.validar_resumo', log_id=log.id) }}">
+      <input type="hidden" name="filtro" value="{{ filtro }}" />
+
+      <div style="margin-bottom:12px;">
+        <label class="tk-label" for="nota-{{ log.id }}">
+          Feedback para o júnior (opcional para aprovação, recomendado para rejeição)
+        </label>
+        <input class="tk-input" type="text" id="nota-{{ log.id }}" name="nota"
+               placeholder="Ex: Ótimo resumo! / Fale mais sobre o que aprendeu..." />
+      </div>
+
+      <div style="display:flex; gap:10px;">
+        <button type="submit" name="acao" value="aprovar"
+                class="tk-btn tk-btn-green" style="flex:1; justify-content:center;"
+                onclick="return confirm('Aprovar o resumo de {{ log.junior.name }}?')">
+          <i class="bi bi-check-circle-fill"></i> Aprovar
+        </button>
+        <button type="submit" name="acao" value="rejeitar"
+                class="tk-btn tk-btn-sm" style="flex:1; justify-content:center;
+                background:rgba(239,68,68,0.15); color:#fca5a5;
+                border:1px solid rgba(239,68,68,0.3);"
+                onclick="return confirm('Rejeitar o resumo de {{ log.junior.name }}? Os Premiles serão revertidos.')">
+          <i class="bi bi-x-circle-fill"></i> Rejeitar
+        </button>
+      </div>
+    </form>
+    {% endif %}
+
+  </div>
+  {% endfor %}
+
+{% else %}
+  <div class="tk-card" style="text-align:center; padding:60px;">
+    {% if filtro == 'pendente' %}
+      <div style="font-size:3rem; margin-bottom:16px;">✅</div>
+      <div style="font-weight:800; font-size:1rem; color:var(--text);">Nenhum resumo pendente!</div>
+      <div style="font-size:0.85rem; color:var(--text-muted); font-weight:600; margin-top:6px;">
+        Todos os resumos já foram validados.
+      </div>
+    {% else %}
+      <div style="font-size:3rem; margin-bottom:16px;">📭</div>
+      <div style="font-weight:800; font-size:1rem; color:var(--text);">Nenhum resumo encontrado.</div>
+    {% endif %}
+  </div>
+{% endif %}
+
+{% endblock %}

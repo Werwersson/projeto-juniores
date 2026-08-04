@@ -25,57 +25,65 @@
 
       <form method="POST">
 
-        {# Nome #}
+        {# Nome completo — obrigatório #}
         <div style="margin-bottom:18px;">
-          <label class="tk-label" for="name">Nome completo</label>
+          <label class="tk-label" for="name">
+            Nome completo <span style="color:#fca5a5;">*</span>
+          </label>
           <input class="tk-input" type="text" id="name" name="name"
                  value="{{ user.name if modo == 'editar' else form.get('name', '') }}"
                  placeholder="Ex: Maria Oliveira" required />
         </div>
 
-        {# E-mail #}
+        {# Username — obrigatório, identificador de login #}
         <div style="margin-bottom:18px;">
-          <label class="tk-label" for="email">E-mail</label>
-          <input class="tk-input" type="email" id="email" name="email"
-                 value="{{ user.email if modo == 'editar' else form.get('email', '') }}"
-                 placeholder="maria@email.com" required />
+          <label class="tk-label" for="username">
+            Nome de usuário (login) <span style="color:#fca5a5;">*</span>
+          </label>
+          <div style="position:relative;">
+            <span style="position:absolute; left:14px; top:50%; transform:translateY(-50%);
+                         color:var(--text-muted); font-weight:700; font-size:0.9rem;">@</span>
+            <input class="tk-input" type="text" id="username" name="username"
+                   value="{{ user.username if modo == 'editar' else form.get('username', '') }}"
+                   placeholder="maria.oliveira" required minlength="3"
+                   style="padding-left:30px; text-transform:lowercase;"
+                   oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9._-]/g,'')" />
+          </div>
+          <div style="font-size:0.73rem; color:var(--text-muted); font-weight:600; margin-top:5px;">
+            Usado para fazer login. Apenas letras minúsculas, números, ponto e hífen.
+          </div>
         </div>
 
-        {# Papel — desabilitado na edição para evitar mudança acidental de role #}
+        {# Papel — desabilitado na edição #}
         <div style="margin-bottom:18px;">
-          <label class="tk-label" for="role">Papel no sistema</label>
+          <label class="tk-label" for="role">
+            Papel no sistema <span style="color:#fca5a5;">*</span>
+          </label>
           {% if modo == 'editar' %}
             <input class="tk-input" type="text"
                    value="{{ user.role.value | capitalize }}" disabled
                    style="opacity:0.5; cursor:not-allowed;" />
-            <div style="font-size:0.75rem; color:var(--text-muted); font-weight:600; margin-top:5px;">
+            <div style="font-size:0.73rem; color:var(--text-muted); font-weight:600; margin-top:5px;">
               O papel não pode ser alterado após o cadastro.
             </div>
           {% else %}
             <select class="tk-input" id="role" name="role" required
                     onchange="togglePgmField(this.value)">
               <option value="" disabled selected>Selecionar papel...</option>
-              <option value="junior"     {% if form.get('role') == 'junior'     %}selected{% endif %}>
-                Júnior (criança)
-              </option>
-              <option value="lider"      {% if form.get('role') == 'lider'      %}selected{% endif %}>
-                Líder de PGM
-              </option>
-              <option value="supervisor" {% if form.get('role') == 'supervisor' %}selected{% endif %}>
-                Supervisor
-              </option>
+              <option value="junior"     {% if form.get('role') == 'junior'     %}selected{% endif %}>Júnior (criança)</option>
+              <option value="lider"      {% if form.get('role') == 'lider'      %}selected{% endif %}>Líder de PGM</option>
+              <option value="supervisor" {% if form.get('role') == 'supervisor' %}selected{% endif %}>Supervisor</option>
             </select>
           {% endif %}
         </div>
 
-        {# PGM — aparece para júnior e líder #}
-        <div id="campo-pgm" style="margin-bottom:18px; {% if modo == 'editar' and user.role.value == 'supervisor' %}display:none{% endif %}">
+        {# PGM #}
+        <div id="campo-pgm" style="margin-bottom:18px;
+             {% if modo == 'editar' and user.role.value == 'supervisor' %}display:none{% endif %}">
           <label class="tk-label" for="pgm_id">
             {% if modo == 'editar' %}
               {% if user.role.value == 'junior' %}PGM da criança{% else %}PGM que lidera{% endif %}
-            {% else %}
-              PGM
-            {% endif %}
+            {% else %}PGM{% endif %}
           </label>
           <select class="tk-input" id="pgm_id" name="pgm_id">
             <option value="">Sem PGM</option>
@@ -84,9 +92,7 @@
               {% if modo == 'editar' %}
                 {% if user.role.value == 'junior' and user.pgm_id == pgm.id %}selected{% endif %}
                 {% if user.role.value == 'lider' %}
-                  {% for pl in user.led_pgms %}
-                    {% if pl.pgm_id == pgm.id %}selected{% endif %}
-                  {% endfor %}
+                  {% for pl in user.led_pgms %}{% if pl.pgm_id == pgm.id %}selected{% endif %}{% endfor %}
                 {% endif %}
               {% else %}
                 {% if form.get('pgm_id') == pgm.id | string %}selected{% endif %}
@@ -98,19 +104,44 @@
         </div>
 
         {# Senha #}
-        <div style="margin-bottom:24px;">
+        <div style="margin-bottom:18px;">
           <label class="tk-label" for="password">
-            {% if modo == 'editar' %}Nova senha (deixe em branco para manter){% else %}Senha inicial{% endif %}
+            {% if modo == 'editar' %}
+              Nova senha <span style="color:var(--text-muted);">(deixe em branco para manter)</span>
+            {% else %}
+              Senha <span style="color:#fca5a5;">*</span>
+            {% endif %}
           </label>
           <input class="tk-input" type="password" id="password" name="password"
                  placeholder="Mínimo 6 caracteres"
                  {% if modo == 'novo' %}required{% endif %} />
           {% if modo == 'novo' %}
-          <div style="font-size:0.75rem; color:var(--text-muted); font-weight:600; margin-top:5px;">
+          <div style="font-size:0.73rem; color:var(--text-muted); font-weight:600; margin-top:5px;">
             <i class="bi bi-info-circle"></i>
-            O usuário deverá trocar a senha no primeiro acesso.
+            O usuário será solicitado a trocar a senha no primeiro acesso.
           </div>
           {% endif %}
+        </div>
+
+        {# Separador — campos opcionais #}
+        <div style="display:flex; align-items:center; gap:12px; margin:24px 0 20px;">
+          <div style="flex:1; height:1px; background:var(--border);"></div>
+          <span style="font-size:0.72rem; color:var(--text-muted); font-weight:700;
+                       letter-spacing:1px; text-transform:uppercase; white-space:nowrap;">
+            Informações opcionais
+          </span>
+          <div style="flex:1; height:1px; background:var(--border);"></div>
+        </div>
+
+        {# E-mail — opcional #}
+        <div style="margin-bottom:24px;">
+          <label class="tk-label" for="email">E-mail</label>
+          <input class="tk-input" type="email" id="email" name="email"
+                 value="{{ user.email if (modo == 'editar' and user.email) else form.get('email', '') }}"
+                 placeholder="email@exemplo.com (opcional)" />
+          <div style="font-size:0.73rem; color:var(--text-muted); font-weight:600; margin-top:5px;">
+            Útil para recuperação de senha no futuro.
+          </div>
         </div>
 
         <div style="display:flex; gap:10px;">
@@ -127,14 +158,12 @@
     </div>
   </div>
 
-  {# Painel informativo lateral #}
+  {# Painel lateral #}
   <div class="col-12 col-lg-5">
     <div class="tk-card">
       <div style="font-size:1.2rem; margin-bottom:10px;">ℹ️</div>
-      <div style="font-weight:800; font-size:0.95rem; margin-bottom:12px;">
-        Papéis do sistema
-      </div>
-      <div style="display:flex; flex-direction:column; gap:12px;">
+      <div style="font-weight:800; font-size:0.95rem; margin-bottom:12px;">Papéis do sistema</div>
+      <div style="display:flex; flex-direction:column; gap:10px;">
         <div style="padding:12px; background:var(--bg-card2); border-radius:var(--radius-sm);">
           <span class="tk-badge tk-badge-junior">Júnior</span>
           <p style="font-size:0.82rem; color:var(--text-muted); font-weight:600; margin:8px 0 0; line-height:1.6;">
@@ -144,15 +173,27 @@
         <div style="padding:12px; background:var(--bg-card2); border-radius:var(--radius-sm);">
           <span class="tk-badge tk-badge-lider">Líder</span>
           <p style="font-size:0.82rem; color:var(--text-muted); font-weight:600; margin:8px 0 0; line-height:1.6;">
-            Gerencia um PGM: lança atividades, credita Premiles e vê o extrato dos seus juniores.
+            Gerencia um PGM: lança atividades, credita Premiles e valida resumos dos seus juniores.
           </p>
         </div>
         <div style="padding:12px; background:var(--bg-card2); border-radius:var(--radius-sm);">
           <span class="tk-badge tk-badge-supervisor">Supervisor</span>
           <p style="font-size:0.82rem; color:var(--text-muted); font-weight:600; margin:8px 0 0; line-height:1.6;">
-            Acesso total a todos os PGMs, usuários e lançamentos.
+            Acesso total a todos os PGMs, usuários, períodos e relatórios.
           </p>
         </div>
+      </div>
+
+      <div style="margin-top:16px; padding:12px; background:rgba(124,58,237,0.08);
+                  border:1px solid rgba(124,58,237,0.2); border-radius:var(--radius-sm);">
+        <div style="font-size:0.75rem; font-weight:800; color:#a78bfa; margin-bottom:6px;">
+          <i class="bi bi-lightbulb-fill"></i> Dica — nome de usuário
+        </div>
+        <p style="font-size:0.78rem; color:var(--text-muted); font-weight:600; margin:0; line-height:1.6;">
+          Para crianças, use algo fácil de lembrar como o primeiro nome:
+          <strong style="color:#fff;">maria</strong>, <strong style="color:#fff;">joao.silva</strong>
+          ou <strong style="color:#fff;">ana123</strong>.
+        </p>
       </div>
     </div>
   </div>
@@ -163,10 +204,9 @@
 {% block scripts %}
 <script>
   function togglePgmField(role) {
-    const campo = document.getElementById('campo-pgm');
-    campo.style.display = (role === 'supervisor') ? 'none' : 'block';
+    document.getElementById('campo-pgm').style.display =
+      (role === 'supervisor') ? 'none' : 'block';
   }
-  // Inicializa com o valor atual do select
   const roleSelect = document.getElementById('role');
   if (roleSelect) togglePgmField(roleSelect.value);
 </script>

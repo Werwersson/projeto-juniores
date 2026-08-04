@@ -72,10 +72,20 @@
         <span class="tk-nav-icon"><i class="bi bi-person-gear"></i></span>
         Usuários
       </a>
+      <a href="{{ url_for('period.index') }}"
+         class="tk-nav-item {% if 'period' in (request.endpoint or '') %}active{% endif %}">
+        <span class="tk-nav-icon"><i class="bi bi-calendar2-check-fill"></i></span>
+        Períodos
+      </a>
       <a href="{{ url_for('supervisor.relatorios') }}"
          class="tk-nav-item {% if request.endpoint == 'supervisor.relatorios' %}active{% endif %}">
         <span class="tk-nav-icon"><i class="bi bi-file-earmark-bar-graph-fill"></i></span>
         Relatórios
+      </a>
+      <a href="{{ url_for('period.index') }}"
+         class="tk-nav-item {% if 'period' in (request.endpoint or '') %}active{% endif %}">
+        <span class="tk-nav-icon"><i class="bi bi-calendar2-check-fill"></i></span>
+        Períodos
       </a>
 
     {% elif current_user.is_lider %}
@@ -94,6 +104,11 @@
          class="tk-nav-item {% if request.endpoint == 'lider.ranking' %}active{% endif %}">
         <span class="tk-nav-icon"><i class="bi bi-trophy-fill"></i></span>
         Ranking
+      </a>
+      <a href="{{ url_for('lider.resumos') }}"
+         class="tk-nav-item {% if request.endpoint == 'lider.resumos' %}active{% endif %}">
+        <span class="tk-nav-icon"><i class="bi bi-journal-text"></i></span>
+        Resumos
       </a>
       <a href="{{ url_for('lider.historico') }}"
          class="tk-nav-item {% if request.endpoint == 'lider.historico' %}active{% endif %}">
@@ -192,9 +207,9 @@
        class="tk-bottom-nav-item {% if request.endpoint == 'supervisor.relatorios' %}active{% endif %}">
       <i class="bi bi-file-earmark-bar-graph-fill"></i>Relatório
     </a>
-    <a href="{{ url_for('supervisor.usuarios') }}"
-       class="tk-bottom-nav-item {% if 'usuario' in (request.endpoint or '') %}active{% endif %}">
-      <i class="bi bi-person-gear"></i>Usuários
+    <a href="{{ url_for('period.index') }}"
+       class="tk-bottom-nav-item {% if 'period' in (request.endpoint or '') %}active{% endif %}">
+      <i class="bi bi-calendar2-check-fill"></i>Períodos
     </a>
 
   {% elif current_user.is_lider %}
@@ -210,12 +225,13 @@
        class="tk-bottom-nav-item {% if request.endpoint == 'lider.ranking' %}active{% endif %}">
       <i class="bi bi-trophy-fill"></i>Ranking
     </a>
+    <a href="{{ url_for('lider.resumos') }}"
+       class="tk-bottom-nav-item {% if request.endpoint == 'lider.resumos' %}active{% endif %}">
+      <i class="bi bi-journal-text"></i>Resumos
+    </a>
     <a href="{{ url_for('lider.historico') }}"
        class="tk-bottom-nav-item {% if request.endpoint == 'lider.historico' %}active{% endif %}">
       <i class="bi bi-clock-history"></i>Histórico
-    </a>
-    <a href="{{ url_for('auth.logout') }}" class="tk-bottom-nav-item">
-      <i class="bi bi-box-arrow-right"></i>Sair
     </a>
 
   {% elif current_user.is_junior %}

@@ -10,14 +10,11 @@
 <div class="tk-topbar">
   <div>
     <div class="tk-page-title">Checklist de hoje</div>
-    <div class="tk-page-subtitle">
-      {{ today.strftime('%A, %d de %B') | capitalize }}
-    </div>
+    <div class="tk-page-subtitle">{{ today.strftime('%A, %d de %B') | capitalize }}</div>
   </div>
   <span class="tk-premiles">⭐ {{ current_user.balance.total_balance if current_user.balance else 0 }} Premiles</span>
 </div>
 
-{# Contadores ocultos usados pelo JS de celebração #}
 <span id="tk-done-count" style="display:none;">{{ done_count }}</span>
 <span id="tk-total-atividades" style="display:none;">{{ total }}</span>
 
@@ -32,6 +29,134 @@
       {% if activities %}
         {% for activity in activities %}
           {% set is_done = activity.id in already_done_ids %}
+          {% set log_hoje = logs_hoje.get(activity.id) %}
+          {% set status = log_hoje.summary_status.value if log_hoje and log_hoje.summary_status else None %}
+
+          {# ── LEITURA COM RESUMO — REJEITADA (reenvio) ── #}
+          {% if activity.requires_summary and log_hoje and status == 'rejeitado' %}
+          <div class="tk-check-item" style="flex-direction:column; align-items:stretch; gap:12px;
+               cursor:default; border-color:rgba(239,68,68,0.4);
+               background:rgba(239,68,68,0.05);">
+            <div style="display:flex; align-items:center; gap:10px;">
+              <div class="tk-check-circle" style="border-color:rgba(239,68,68,0.4);">
+                <i class="bi bi-x-circle-fill" style="color:#fca5a5; font-size:0.9rem;"></i>
+              </div>
+              <div style="flex:1;">
+                <div class="tk-check-label">{{ activity.name }}</div>
+                <div class="tk-check-pts" style="color:#fca5a5;">
+                  ❌ Resumo rejeitado — reescreva e envie novamente
+                </div>
+              </div>
+            </div>
+
+            {% if log_hoje.validator_note %}
+            <div style="background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.2);
+                        border-radius:var(--radius-sm); padding:10px 14px; font-size:0.82rem;
+                        color:#fca5a5; font-weight:600;">
+              <i class="bi bi-chat-text-fill"></i>
+              <strong>Feedback do líder:</strong> {{ log_hoje.validator_note }}
+            </div>
+            {% endif %}
+
+            <div style="font-size:0.78rem; color:var(--text-muted); font-weight:600;">
+              Seu resumo anterior: <em style="color:var(--text-soft);">{{ log_hoje.summary[:120] }}{% if log_hoje.summary|length > 120 %}...{% endif %}</em>
+            </div>
+
+            <form method="POST" action="{{ url_for('junior.checklist') }}">
+              <input type="hidden" name="activity_type_id" value="{{ activity.id }}" />
+              <input type="hidden" name="premiles" value="{{ activity.default_premiles or 10 }}" />
+              <textarea name="summary" rows="3" required minlength="10"
+                placeholder="Reescreva seu resumo com mais detalhes..."
+                style="width:100%; background:var(--bg-card2); border:1px solid rgba(239,68,68,0.3);
+                       border-radius:var(--radius-sm); color:var(--text); font-family:var(--font);
+                       font-size:0.88rem; font-weight:600; padding:10px 14px; resize:vertical;
+                       transition:border-color .18s; margin-bottom:8px;"
+                onfocus="this.style.borderColor='var(--purple)'"
+                onblur="this.style.borderColor='rgba(239,68,68,0.3)'"></textarea>
+              <button type="submit" class="tk-btn tk-btn-purple tk-btn-sm"
+                      style="width:100%; justify-content:center;">
+                <i class="bi bi-send-fill"></i> Reenviar resumo
+              </button>
+            </form>
+          </div>
+
+          {# ── LEITURA COM RESUMO — PENDENTE ── #}
+          {% elif activity.requires_summary and log_hoje and status == 'pendente' %}
+          <div class="tk-check-item done" style="cursor:default;
+               border-color:rgba(251,191,36,0.3); background:rgba(251,191,36,0.04);">
+            <div class="tk-check-circle" style="background:rgba(251,191,36,0.2); border-color:rgba(251,191,36,0.4);">
+              <i class="bi bi-hourglass-split" style="color:#fbbf24; font-size:0.85rem;"></i>
+            </div>
+            <div style="flex:1;">
+              <div class="tk-check-label">{{ activity.name }}</div>
+              <div class="tk-check-pts" style="color:#fbbf24;">
+                ⏳ Resumo enviado · aguardando validação do líder
+              </div>
+              {% if log_hoje.summary %}
+              <div style="font-size:0.75rem; color:var(--text-muted); margin-top:4px;">
+                <i class="bi bi-quote"></i> {{ log_hoje.summary[:80] }}{% if log_hoje.summary|length > 80 %}...{% endif %}
+              </div>
+              {% endif %}
+            </div>
+          </div>
+
+          {# ── LEITURA COM RESUMO — APROVADA ── #}
+          {% elif activity.requires_summary and log_hoje and status == 'aprovado' %}
+          <div class="tk-check-item done" style="cursor:default;
+               border-color:rgba(16,185,129,0.3);">
+            <div class="tk-check-circle">
+              <i class="bi bi-check-lg" style="color:#fff; font-weight:800;"></i>
+            </div>
+            <div style="flex:1;">
+              <div class="tk-check-label">{{ activity.name }}</div>
+              <div class="tk-check-pts" style="color:#6ee7b7;">
+                ✅ Resumo aprovado pelo líder!
+                {% if log_hoje.validator_note %}· "{{ log_hoje.validator_note }}"{% endif %}
+              </div>
+            </div>
+          </div>
+
+          {# ── LEITURA COM RESUMO — NÃO FEITA (formulário) ── #}
+          {% elif activity.requires_summary and not is_done %}
+          <div class="tk-check-item" style="flex-direction:column; align-items:stretch;
+               gap:12px; cursor:default;">
+            <div style="display:flex; align-items:center; gap:10px;">
+              <div class="tk-check-circle">
+                <i class="bi bi-book-fill" style="color:var(--purple); font-size:0.85rem;"></i>
+              </div>
+              <div style="flex:1;">
+                <div class="tk-check-label">{{ activity.name }}</div>
+                <div class="tk-check-pts">
+                  +{{ activity.default_premiles or 10 }} Premiles · escreva um resumo
+                </div>
+              </div>
+            </div>
+            <form class="tk-check-form" method="POST" action="{{ url_for('junior.checklist') }}">
+              <input type="hidden" name="activity_type_id" value="{{ activity.id }}" />
+              <input type="hidden" name="premiles" value="{{ activity.default_premiles or 10 }}" />
+              <textarea name="summary" rows="3" required minlength="10"
+                placeholder="O que você leu hoje? Conte um pouco sobre a leitura... (mínimo 10 caracteres)"
+                style="width:100%; background:var(--bg-card2); border:1px solid var(--border);
+                       border-radius:var(--radius-sm); color:var(--text); font-family:var(--font);
+                       font-size:0.88rem; font-weight:600; padding:10px 14px; resize:vertical;
+                       transition:border-color .18s; margin-bottom:8px;"
+                onfocus="this.style.borderColor='var(--purple)'; this.style.boxShadow='0 0 0 3px rgba(124,58,237,0.15)'"
+                onblur="this.style.borderColor='var(--border)'; this.style.boxShadow='none'"
+                oninput="atualizarContador(this)"></textarea>
+              <div style="font-size:0.72rem; color:var(--text-muted); font-weight:600;
+                          margin-bottom:8px; text-align:right;" id="contador-{{ activity.id }}">
+                0 caracteres
+              </div>
+              <button type="submit" class="tk-btn tk-btn-purple tk-btn-sm"
+                      style="width:100%; justify-content:center;"
+                      data-premiles="{{ activity.default_premiles or 10 }}">
+                <i class="bi bi-send-fill"></i> Enviar resumo e marcar
+              </button>
+            </form>
+          </div>
+
+          {# ── ATIVIDADE NORMAL ── #}
+          {% else %}
           <form class="tk-check-form" method="POST" action="{{ url_for('junior.checklist') }}">
             <input type="hidden" name="activity_type_id" value="{{ activity.id }}" />
             <input type="hidden" name="premiles" value="{{ activity.default_premiles or 10 }}" />
@@ -50,11 +175,8 @@
               <div style="flex:1;">
                 <div class="tk-check-label">{{ activity.name }}</div>
                 <div class="tk-check-pts">
-                  {% if is_done %}
-                    ✅ Concluída hoje
-                  {% else %}
-                    +{{ activity.default_premiles or 10 }} Premiles ao marcar
-                  {% endif %}
+                  {% if is_done %}✅ Concluída hoje
+                  {% else %}+{{ activity.default_premiles or 10 }} Premiles ao marcar{% endif %}
                 </div>
               </div>
               {% if not is_done %}
@@ -62,12 +184,14 @@
               {% endif %}
             </button>
           </form>
+          {% endif %}
+
         {% endfor %}
       {% else %}
         <div style="text-align:center; padding:30px; color:var(--text-muted); font-weight:600;">
           <i class="bi bi-clipboard-check" style="font-size:2rem; display:block; margin-bottom:8px;"></i>
           Nenhuma atividade disponível no momento.<br>
-          <small style="font-size:0.78rem;">Peça ao seu líder para cadastrar as atividades.</small>
+          <small>Peça ao seu líder para cadastrar as atividades.</small>
         </div>
       {% endif %}
     </div>
@@ -81,9 +205,9 @@
       <ul style="color:var(--text-muted); font-size:0.83rem; font-weight:600;
                  padding-left:18px; line-height:1.9; margin:0;">
         <li>Marque cada atividade que você fez <strong style="color:var(--text);">hoje</strong>.</li>
-        <li>Os Premiles são creditados automaticamente.</li>
-        <li>Só é possível marcar atividades do dia atual.</li>
-        <li>Se esquecer, fale com seu líder — ele pode ajudar!</li>
+        <li>Na <strong style="color:var(--text);">Leitura diária</strong>, escreva um resumo — o líder vai validar.</li>
+        <li>Se o resumo for <span style="color:#fca5a5;">rejeitado</span>, você pode reescrever e reenviar.</li>
+        <li>Se esquecer, fale com seu líder!</li>
       </ul>
     </div>
 
@@ -107,7 +231,6 @@
                     width:{{ pct }}%; transition:width 0.5s ease;">
         </div>
       </div>
-
       {% if done_count == total and total > 0 %}
       <div style="margin-top:14px; padding:10px 14px; background:rgba(16,185,129,0.1);
                   border:1px solid rgba(16,185,129,0.3); border-radius:var(--radius-sm);
@@ -117,22 +240,6 @@
       {% endif %}
     </div>
     {% endif %}
-
-    {# Card de notificação push #}
-    <div id="card-notif" class="tk-card" style="margin-top:12px; border-color:rgba(6,182,212,0.25); display:none;">
-      <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
-        <i class="bi bi-bell-fill" style="color:#67e8f9;"></i>
-        <span style="font-size:0.78rem; font-weight:800; letter-spacing:1px;
-                     text-transform:uppercase; color:var(--text-muted);">Lembrete diário</span>
-      </div>
-      <p style="font-size:0.82rem; color:var(--text-muted); font-weight:600; margin-bottom:12px; line-height:1.5;">
-        Quer receber um lembrete para não esquecer seu checklist?
-      </p>
-      <button id="btn-ativar-notif" onclick="ativarNotificacoes()"
-              class="tk-btn tk-btn-ghost tk-btn-sm" style="width:100%; justify-content:center;">
-        <i class="bi bi-bell-fill"></i> Ativar lembretes
-      </button>
-    </div>
   </div>
 </div>
 
@@ -141,30 +248,16 @@
 {% block scripts %}
 <script src="{{ url_for('static', filename='js/checklist.js') }}"></script>
 <script>
-async function ativarNotificacoes() {
-  if (!('Notification' in window)) { alert('Seu navegador não suporta notificações.'); return; }
-  const p = await Notification.requestPermission();
-  if (p === 'granted') {
-    const btn = document.getElementById('btn-ativar-notif');
-    btn.textContent = '✅ Lembretes ativados!';
-    btn.disabled = true;
-    localStorage.setItem('tk_notif', '1');
-    const agora = new Date();
-    const lembrete = new Date();
-    lembrete.setHours(20, 0, 0, 0);
-    if (lembrete <= agora) lembrete.setDate(lembrete.getDate() + 1);
-    setTimeout(function() {
-      new Notification('TeoK!ds. 🌟', { body: 'Não esqueça de marcar seu checklist hoje!' });
-    }, lembrete - agora);
+function atualizarContador(textarea) {
+  const n = textarea.value.length;
+  const id = textarea.closest('form').querySelector('[id^="contador-"]');
+  if (id) {
+    id.textContent = n + ' caractere' + (n !== 1 ? 's' : '');
+    id.style.color = n >= 10 ? 'var(--green)' : 'var(--text-muted)';
   }
 }
-document.addEventListener('DOMContentLoaded', function() {
-  if ('Notification' in window && Notification.permission !== 'granted' && !localStorage.getItem('tk_notif')) {
-    document.getElementById('card-notif').style.display = 'block';
-  }
-});
 </script>
 <style>
-@keyframes tkpulse { from { transform:scale(1); } to { transform:scale(1.15); } }
+@keyframes tkpulse { from{transform:scale(1);}to{transform:scale(1.15);} }
 </style>
 {% endblock %}

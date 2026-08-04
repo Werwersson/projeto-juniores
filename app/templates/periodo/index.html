@@ -1,0 +1,236 @@
+{% extends "base.html" %}
+{% block title %}Períodos de Premiles — TeoK!ds.{% endblock %}
+
+{% block content %}
+
+<div class="tk-topbar">
+  <div>
+    <div class="tk-page-title">Períodos de Premiles</div>
+    <div class="tk-page-subtitle">Gerencie os ciclos de acumulação e distribuição de prêmios</div>
+  </div>
+</div>
+
+<div class="row g-4">
+
+  {# ── Painel esquerdo: período ativo ── #}
+  <div class="col-12 col-lg-7">
+
+    {% if ativo %}
+    {# Período ativo #}
+    <div class="tk-card mb-4"
+         style="border-color:rgba(16,185,129,0.4);
+                box-shadow:0 0 0 1px rgba(16,185,129,0.15), 0 8px 32px rgba(16,185,129,0.08);">
+
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:20px;">
+        <div style="width:10px; height:10px; border-radius:50%; background:#10b981;
+                    box-shadow:0 0 0 3px rgba(16,185,129,0.3); animation:tkpulse 1.5s ease infinite alternate;">
+        </div>
+        <div style="font-size:0.72rem; font-weight:800; letter-spacing:1px;
+                    text-transform:uppercase; color:#6ee7b7;">
+          Período ativo
+        </div>
+      </div>
+
+      <div style="font-size:1.5rem; font-weight:900; color:#fff; margin-bottom:6px;">
+        {{ ativo.name }}
+      </div>
+
+      <div style="display:flex; gap:20px; flex-wrap:wrap; margin-bottom:20px;">
+        <div>
+          <div style="font-size:0.7rem; color:var(--text-muted); font-weight:700; letter-spacing:.5px; text-transform:uppercase;">Início</div>
+          <div style="font-size:0.9rem; font-weight:700; color:var(--text);">
+            {{ ativo.start_date.strftime('%d/%m/%Y') }}
+          </div>
+        </div>
+        <div>
+          <div style="font-size:0.7rem; color:var(--text-muted); font-weight:700; letter-spacing:.5px; text-transform:uppercase;">Término</div>
+          <div style="font-size:0.9rem; font-weight:700; color:var(--text);">
+            {{ ativo.end_date.strftime('%d/%m/%Y') if ativo.end_date else 'Em aberto' }}
+          </div>
+        </div>
+        <div>
+          <div style="font-size:0.7rem; color:var(--text-muted); font-weight:700; letter-spacing:.5px; text-transform:uppercase;">Duração</div>
+          <div style="font-size:0.9rem; font-weight:700; color:var(--text);">
+            {{ ativo.duration_days }} dias
+          </div>
+        </div>
+        <div>
+          <div style="font-size:0.7rem; color:var(--text-muted); font-weight:700; letter-spacing:.5px; text-transform:uppercase;">Criado por</div>
+          <div style="font-size:0.9rem; font-weight:700; color:var(--text);">
+            {{ ativo.creator.name }}
+          </div>
+        </div>
+      </div>
+
+      {# Alerta de encerramento #}
+      {% if ativo.end_date and ativo.end_date <= hoje %}
+      <div class="tk-alert tk-alert-warning" style="margin-bottom:16px;">
+        <i class="bi bi-exclamation-triangle-fill"></i>
+        Este período atingiu sua data de término. Encerre-o para liberar o próximo ciclo.
+      </div>
+      {% elif ativo.end_date %}
+        {% set dias_restantes = (ativo.end_date - hoje).days %}
+        {% if dias_restantes <= 7 %}
+        <div class="tk-alert tk-alert-warning" style="margin-bottom:16px;">
+          <i class="bi bi-clock-fill"></i>
+          Faltam <strong>{{ dias_restantes }} dia{{ 's' if dias_restantes != 1 }}</strong> para o término.
+        </div>
+        {% endif %}
+      {% endif %}
+
+      {# Botão encerrar #}
+      <button data-bs-toggle="modal" data-bs-target="#modal-encerrar"
+              class="tk-btn tk-btn-sm"
+              style="background:rgba(239,68,68,0.15); color:#fca5a5;
+                     border:1px solid rgba(239,68,68,0.3); width:100%; justify-content:center;">
+        <i class="bi bi-stop-circle-fill"></i> Encerrar período e distribuir prêmios
+      </button>
+    </div>
+
+    {# Modal de confirmação de encerramento #}
+    <div class="modal fade" id="modal-encerrar" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content"
+             style="background:var(--bg-card); border:1px solid rgba(239,68,68,0.3); border-radius:var(--radius-lg);">
+          <div class="modal-header" style="border-color:rgba(239,68,68,0.2);">
+            <h5 class="modal-title" style="font-weight:800; font-size:0.95rem; color:#fca5a5;">
+              <i class="bi bi-stop-circle-fill me-2"></i>Encerrar período
+            </h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <p style="font-size:0.9rem; color:var(--text-soft); font-weight:600; line-height:1.7; margin-bottom:12px;">
+              Você está prestes a encerrar o período <strong style="color:#fff;">{{ ativo.name }}</strong>.
+            </p>
+            <div style="background:rgba(239,68,68,0.08); border:1px solid rgba(239,68,68,0.2);
+                        border-radius:var(--radius-sm); padding:14px; font-size:0.83rem;
+                        color:#fca5a5; font-weight:600; line-height:1.8;">
+              <div>⚠️ Esta ação <strong>não pode ser desfeita</strong>.</div>
+              <div>📸 O saldo atual de <strong>todos os juniores</strong> será arquivado.</div>
+              <div>🔄 Os saldos serão <strong>zerados</strong> para o próximo período.</div>
+              <div>🏆 Um relatório histórico ficará disponível.</div>
+            </div>
+          </div>
+          <div class="modal-footer" style="border-color:rgba(239,68,68,0.2);">
+            <button type="button" class="tk-btn tk-btn-ghost tk-btn-sm" data-bs-dismiss="modal">
+              Cancelar
+            </button>
+            <form method="POST"
+                  action="{{ url_for('periodo.encerrar', periodo_id=ativo.id) }}">
+              <button type="submit" class="tk-btn tk-btn-sm"
+                      style="background:rgba(239,68,68,0.8); color:#fff; border:none;">
+                <i class="bi bi-stop-circle-fill"></i> Confirmar encerramento
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {% else %}
+    {# Sem período ativo — formulário para criar #}
+    <div class="tk-card mb-4" style="border-color:rgba(124,58,237,0.3);">
+      <div style="font-size:0.72rem; font-weight:800; letter-spacing:1px;
+                  text-transform:uppercase; color:var(--text-muted); margin-bottom:20px;">
+        Criar novo período
+      </div>
+
+      <div class="tk-alert tk-alert-info" style="margin-bottom:20px;">
+        <i class="bi bi-info-circle-fill"></i>
+        Nenhum período ativo. Os Premiles estão sendo acumulados sem vínculo a um ciclo.
+        Crie um período para organizar a distribuição de prêmios.
+      </div>
+
+      <form method="POST" action="{{ url_for('periodo.novo') }}">
+
+        <div style="margin-bottom:16px;">
+          <label class="tk-label" for="name">Nome do período</label>
+          <input class="tk-input" type="text" id="name" name="name" required
+                 placeholder="Ex: 1º Trimestre 2025, Semestre Novo, Março a Junho..." />
+        </div>
+
+        <div class="row g-3" style="margin-bottom:16px;">
+          <div class="col-6">
+            <label class="tk-label" for="start_date">Data de início</label>
+            <input class="tk-input" type="date" id="start_date" name="start_date"
+                   value="{{ hoje.isoformat() }}" required />
+          </div>
+          <div class="col-6">
+            <label class="tk-label" for="end_date">
+              Data de término <span style="color:var(--text-muted); font-weight:500;">(opcional)</span>
+            </label>
+            <input class="tk-input" type="date" id="end_date" name="end_date" />
+          </div>
+        </div>
+
+        <div style="background:var(--bg-card2); border-radius:var(--radius-sm);
+                    padding:12px 14px; margin-bottom:20px; font-size:0.8rem;
+                    color:var(--text-muted); font-weight:600; line-height:1.8;">
+          <div>💡 Deixe a data de término em branco para um período sem prazo definido.</div>
+          <div>💡 Você receberá um aviso quando a data de término estiver próxima.</div>
+          <div>💡 Os saldos atuais dos juniores serão mantidos e vinculados a este período.</div>
+        </div>
+
+        <button type="submit" class="tk-btn tk-btn-purple" style="width:100%; justify-content:center;">
+          <i class="bi bi-play-circle-fill"></i> Iniciar período
+        </button>
+      </form>
+    </div>
+    {% endif %}
+
+  </div>
+
+  {# ── Painel direito: histórico ── #}
+  <div class="col-12 col-lg-5">
+    <div class="tk-card">
+      <div style="font-size:0.72rem; font-weight:800; letter-spacing:1px;
+                  text-transform:uppercase; color:var(--text-muted); margin-bottom:16px;">
+        Histórico de períodos
+      </div>
+
+      {% set encerrados = historico | selectattr('is_active', 'false') | list %}
+      {% if encerrados %}
+        {% for p in encerrados %}
+        <a href="{{ url_for('periodo.detalhe', periodo_id=p.id) }}"
+           style="text-decoration:none; display:block;">
+          <div style="display:flex; align-items:center; justify-content:space-between;
+                      padding:12px 14px; border:0.5px solid var(--border); border-radius:var(--radius-sm);
+                      margin-bottom:8px; background:var(--bg-card2); transition:border-color .18s;"
+               onmouseover="this.style.borderColor='var(--purple)'"
+               onmouseout="this.style.borderColor='var(--border)'">
+            <div>
+              <div style="font-weight:700; font-size:0.88rem; color:var(--text);">{{ p.name }}</div>
+              <div style="font-size:0.74rem; color:var(--text-muted); font-weight:600; margin-top:3px;">
+                {{ p.start_date.strftime('%d/%m/%Y') }} →
+                {{ p.end_date.strftime('%d/%m/%Y') if p.end_date else '—' }}
+                · {{ p.duration_days }} dias
+              </div>
+            </div>
+            <div style="text-align:right; flex-shrink:0;">
+              <div style="font-size:0.75rem; color:#6ee7b7; font-weight:700;">
+                {{ p.snapshots | length }} juniores
+              </div>
+              <i class="bi bi-arrow-right" style="color:var(--text-muted); font-size:0.85rem;"></i>
+            </div>
+          </div>
+        </a>
+        {% endfor %}
+      {% else %}
+        <div style="text-align:center; padding:32px; color:var(--text-muted); font-weight:600;">
+          <i class="bi bi-archive" style="font-size:2rem; display:block; margin-bottom:10px;"></i>
+          Nenhum período encerrado ainda.
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<style>
+@keyframes tkpulse { from{box-shadow:0 0 0 3px rgba(16,185,129,0.3);}
+                     to  {box-shadow:0 0 0 6px rgba(16,185,129,0.05);} }
+</style>
+{% endblock %}
