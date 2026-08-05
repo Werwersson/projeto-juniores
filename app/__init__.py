@@ -1,19 +1,22 @@
 import os
 from flask import Flask
-from app.extensions import db, login_manager  # Importando os dois agora!
+from app.extensions import db, login_manager
 
 def create_app():
     app = Flask(__name__)
     
-    # Configurações básicas (puxando do Vercel ou usando padrão local)
     app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///local.db')
-    app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', '')
+    app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'chave-super-secreta')
     
-    # Inicializando as extensões com o app
     db.init_app(app)
     login_manager.init_app(app)
+    
+    # --- ADICIONE ESTAS DUAS LINHAS ---
+    # Substitua 'auth.login' pelo nome do seu blueprint e função de login
+    login_manager.login_view = 'auth.login' 
+    login_manager.login_message = 'Por favor, faça login para acessar esta página.'
+    # ----------------------------------
 
-    # Registro de Blueprints
     from app.blueprints.period import period_bp
     app.register_blueprint(period_bp)
     
