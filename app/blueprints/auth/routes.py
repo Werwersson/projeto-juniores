@@ -8,9 +8,13 @@ SENHA_PADRAO = "juniores2025"
 
 
 def _dashboard_url():
-    if current_user.role == UserRole.SUPERVISOR:
+    # Extrai o texto puro do cargo para evitar conflitos
+    user_role = current_user.role.value if hasattr(current_user.role, 'value') else current_user.role
+    user_role = str(user_role).upper() # Garante que está em maiúsculo
+    
+    if user_role == "SUPERVISOR":
         return url_for("supervisor.dashboard")
-    if current_user.role == UserRole.LIDER:
+    if user_role == "LIDER":
         return url_for("lider.dashboard")
     return url_for("junior.dashboard")
 

@@ -8,22 +8,26 @@ from app.models.user import UserRole
 def requires_role(*roles: UserRole):
     """
     Garante que o usuário autenticado possui um dos roles permitidos.
-
-    Uso:
-        @requires_role(UserRole.SUPERVISOR)
-        @requires_role(UserRole.SUPERVISOR, UserRole.LIDER)
     """
     def decorator(f):
         @wraps(f)
         def decorated_function(*args, **kwargs):
             if not current_user.is_authenticated:
                 abort(401)
-            if current_user.role not in roles:
+            
+            # Pega o cargo do usuário como texto puro
+            user_role_str = current_user.role.value if hasattr(current_user.role, 'value') else current_user.role
+            user_role_str = str(user_role_str).upper()
+            
+            # Pega os cargos permitidos da rota como texto puro
+            allowed_roles_str = [r.value.upper() if hasattr(r, 'value') else str(r).upper() for r in roles]
+            
+            if user_role_str not in allowed_roles_str:
                 abort(403)
+                
             return f(*args, **kwargs)
         return decorated_function
     return decorator
-
 
 def requires_pgm_access(pgm_id_param: str = "pgm_id"):
     """
