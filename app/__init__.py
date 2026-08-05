@@ -47,3 +47,4 @@ def create_app():
     
     app.register_blueprint(period_bp)
     # --------------------------------------
+    return app
