@@ -4,6 +4,7 @@ from flask_login import current_user
 from app.models.user import UserRole
 
 
+
 def requires_role(*roles: UserRole):
     """
     Garante que o usuário autenticado possui um dos roles permitidos.
@@ -68,7 +69,7 @@ def requires_own_profile_or_leader(junior_id_param: str = "junior_id"):
         @wraps(f)
         def decorated_function(*args, **kwargs):
             from app.models.user import User
-            from app import db
+            from app.extensions import db
 
             if not current_user.is_authenticated:
                 abort(401)
