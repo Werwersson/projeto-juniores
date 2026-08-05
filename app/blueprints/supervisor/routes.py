@@ -76,8 +76,7 @@ def novo_usuario():
 
     if request.method == "POST":
         name     = request.form.get("name", "").strip()
-        username = request.form.get("username", "").strip().lower()
-        email    = request.form.get("email", "").strip().lower() or None
+        email    = request.form.get("email", "").strip().lower()
         role     = request.form.get("role")
         pgm_id   = request.form.get("pgm_id") or None
         password = request.form.get("password", "").strip()
@@ -85,22 +84,14 @@ def novo_usuario():
         errors = []
         if not name:
             errors.append("Nome completo é obrigatório.")
-        if not username:
-            errors.append("Nome de usuário é obrigatório.")
-        if len(username) < 3:
-            errors.append("Nome de usuário deve ter ao menos 3 caracteres.")
+        if not email:
+            errors.append("O E-mail é obrigatório para o login.")
         if role not in [r.value for r in UserRole]:
             errors.append("Papel inválido.")
         if not password or len(password) < 6:
             errors.append("Senha deve ter ao menos 6 caracteres.")
 
-        # Verifica username duplicado
-        if username and db.session.execute(
-            db.select(User).where(User.username == username)
-        ).scalar_one_or_none():
-            errors.append(f'O nome de usuário "{username}" já está em uso.')
-
-        # Verifica email duplicado (só se preenchido)
+        # Verifica email duplicado
         if email and db.session.execute(
             db.select(User).where(User.email == email)
         ).scalar_one_or_none():
@@ -112,9 +103,9 @@ def novo_usuario():
             return render_template("supervisor/form_usuario.html",
                                    pgms=pgms, modo="novo", form=request.form)
 
+        # Criação do usuário sem a coluna username
         user = User(
             name=name,
-            username=username,
             email=email,
             role=UserRole(role),
             pgm_id=int(pgm_id) if pgm_id and role == UserRole.JUNIOR.value else None,
@@ -145,22 +136,17 @@ def editar_usuario(user_id):
 
     if request.method == "POST":
         name       = request.form.get("name", "").strip()
-        username   = request.form.get("username", "").strip().lower()
-        email      = request.form.get("email", "").strip().lower() or None
+        email      = request.form.get("email", "").strip().lower()
         pgm_id     = request.form.get("pgm_id") or None
         nova_senha = request.form.get("password", "").strip()
 
         errors = []
         if not name:
             errors.append("Nome completo é obrigatório.")
-        if not username or len(username) < 3:
-            errors.append("Nome de usuário deve ter ao menos 3 caracteres.")
+        if not email:
+            errors.append("O E-mail é obrigatório.")
 
-        if username and db.session.execute(
-            db.select(User).where(User.username == username, User.id != user_id)
-        ).scalar_one_or_none():
-            errors.append(f'O nome de usuário "{username}" já está em uso.')
-
+        # Verifica e-mail duplicado
         if email and db.session.execute(
             db.select(User).where(User.email == email, User.id != user_id)
         ).scalar_one_or_none():
@@ -173,9 +159,9 @@ def editar_usuario(user_id):
                                    pgms=pgms, modo="editar",
                                    user=user, form=request.form)
 
-        user.name     = name
-        user.username = username
-        user.email    = email
+        # Atualiza os dados principais
+        user.name  = name
+        user.email = email
 
         # Atualiza PGM do júnior
         if user.role == UserRole.JUNIOR and pgm_id:
@@ -191,6 +177,7 @@ def editar_usuario(user_id):
             else:
                 db.session.add(PGMLeader(user_id=user_id, pgm_id=int(pgm_id)))
 
+        # Atualiza a senha apenas se o supervisor digitou algo
         if nova_senha and len(nova_senha) >= 6:
             user.set_password(nova_senha)
 
@@ -403,8 +390,8 @@ def exportar_periodo_excel(periodo_id):
     from app.models.pgm import PGM
     import io, openpyxl
     from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
-    from openpyxl.utils import get_column_letter
     from datetime import datetime
+    from openpyxl.utils import get_column_letter
 
     periodo = db.get_or_404(Period, periodo_id)
     snapshots = db.session.execute(

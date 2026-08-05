@@ -35,23 +35,14 @@
                  placeholder="Ex: Maria Oliveira" required />
         </div>
 
-        {# Username — obrigatório, identificador de login #}
+        {# E-mail — obrigatório, identificador de login #}
         <div style="margin-bottom:18px;">
-          <label class="tk-label" for="username">
-            Nome de usuário (login) <span style="color:#fca5a5;">*</span>
+          <label class="tk-label" for="email">
+            E-mail (usado para login) <span style="color:#fca5a5;">*</span>
           </label>
-          <div style="position:relative;">
-            <span style="position:absolute; left:14px; top:50%; transform:translateY(-50%);
-                         color:var(--text-muted); font-weight:700; font-size:0.9rem;">@</span>
-            <input class="tk-input" type="text" id="username" name="username"
-                   value="{{ user.username if modo == 'editar' else form.get('username', '') }}"
-                   placeholder="maria.oliveira" required minlength="3"
-                   style="padding-left:30px; text-transform:lowercase;"
-                   oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9._-]/g,'')" />
-          </div>
-          <div style="font-size:0.73rem; color:var(--text-muted); font-weight:600; margin-top:5px;">
-            Usado para fazer login. Apenas letras minúsculas, números, ponto e hífen.
-          </div>
+          <input class="tk-input" type="email" id="email" name="email"
+                 value="{{ user.email if (modo == 'editar' and user.email) else form.get('email', '') }}"
+                 placeholder="email@exemplo.com" required style="text-transform:lowercase;" />
         </div>
 
         {# Papel — desabilitado na edição #}
@@ -104,7 +95,7 @@
         </div>
 
         {# Senha #}
-        <div style="margin-bottom:18px;">
+        <div style="margin-bottom:24px;">
           <label class="tk-label" for="password">
             {% if modo == 'editar' %}
               Nova senha <span style="color:var(--text-muted);">(deixe em branco para manter)</span>
@@ -121,27 +112,6 @@
             O usuário será solicitado a trocar a senha no primeiro acesso.
           </div>
           {% endif %}
-        </div>
-
-        {# Separador — campos opcionais #}
-        <div style="display:flex; align-items:center; gap:12px; margin:24px 0 20px;">
-          <div style="flex:1; height:1px; background:var(--border);"></div>
-          <span style="font-size:0.72rem; color:var(--text-muted); font-weight:700;
-                       letter-spacing:1px; text-transform:uppercase; white-space:nowrap;">
-            Informações opcionais
-          </span>
-          <div style="flex:1; height:1px; background:var(--border);"></div>
-        </div>
-
-        {# E-mail — opcional #}
-        <div style="margin-bottom:24px;">
-          <label class="tk-label" for="email">E-mail</label>
-          <input class="tk-input" type="email" id="email" name="email"
-                 value="{{ user.email if (modo == 'editar' and user.email) else form.get('email', '') }}"
-                 placeholder="email@exemplo.com (opcional)" />
-          <div style="font-size:0.73rem; color:var(--text-muted); font-weight:600; margin-top:5px;">
-            Útil para recuperação de senha no futuro.
-          </div>
         </div>
 
         <div style="display:flex; gap:10px;">
@@ -187,12 +157,11 @@
       <div style="margin-top:16px; padding:12px; background:rgba(124,58,237,0.08);
                   border:1px solid rgba(124,58,237,0.2); border-radius:var(--radius-sm);">
         <div style="font-size:0.75rem; font-weight:800; color:#a78bfa; margin-bottom:6px;">
-          <i class="bi bi-lightbulb-fill"></i> Dica — nome de usuário
+          <i class="bi bi-lightbulb-fill"></i> Dica — Acesso via E-mail
         </div>
         <p style="font-size:0.78rem; color:var(--text-muted); font-weight:600; margin:0; line-height:1.6;">
-          Para crianças, use algo fácil de lembrar como o primeiro nome:
-          <strong style="color:#fff;">maria</strong>, <strong style="color:#fff;">joao.silva</strong>
-          ou <strong style="color:#fff;">ana123</strong>.
+          Todos os acessos são feitos através do e-mail. Para crianças que não possuem e-mail, você pode criar um fictício estruturado, como: 
+          <strong style="color:#fff;">maria@teokids.com</strong>.
         </p>
       </div>
     </div>

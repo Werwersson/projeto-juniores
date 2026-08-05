@@ -78,39 +78,37 @@
       </div>
 
       {% for act in junior_acts %}
-      <form method="POST" action="{{ url_for('supervisor.editar_atividade', act_id=act.id) }}"
-            style="display:flex; align-items:center; gap:10px; padding:10px 0;
-                   border-bottom:1px solid var(--border); flex-wrap:wrap;"
-            id="form-act-{{ act.id }}">
+      <!-- DIV PAI PARA MANTER O LAYOUT -->
+      <div style="display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--border); flex-wrap:wrap;">
+        
+        <!-- FORM 1: EDITAR -->
+        <form method="POST" action="{{ url_for('supervisor.editar_atividade', act_id=act.id) }}" style="display:flex; flex:1; align-items:center; gap:10px; min-width:200px;">
+          <div style="flex:1;">
+            <input class="tk-input" type="text" name="name" value="{{ act.name }}"
+                   style="font-size:0.88rem; padding:7px 12px;"
+                   {% if not act.is_active %}style="opacity:0.5;"{% endif %} />
+          </div>
 
-        <div style="flex:1; min-width:160px;">
-          <input class="tk-input" type="text" name="name" value="{{ act.name }}"
-                 style="font-size:0.88rem; padding:7px 12px;"
-                 {% if not act.is_active %}style="opacity:0.5;"{% endif %} />
-        </div>
+          <div style="display:flex; align-items:center; gap:6px;">
+            <input class="tk-input" type="number" name="default_premiles"
+                   value="{{ act.default_premiles }}" min="1" max="500"
+                   style="width:72px; font-size:0.88rem; padding:7px 10px; text-align:center;" />
+            <span style="font-size:0.72rem; color:var(--text-muted); font-weight:700;">pts</span>
+          </div>
 
-        <div style="display:flex; align-items:center; gap:6px;">
-          <input class="tk-input" type="number" name="default_premiles"
-                 value="{{ act.default_premiles }}" min="1" max="500"
-                 style="width:72px; font-size:0.88rem; padding:7px 10px; text-align:center;" />
-          <span style="font-size:0.72rem; color:var(--text-muted); font-weight:700;">pts</span>
-        </div>
+          <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-size:0.78rem; font-weight:700; color:var(--text-muted);">
+            <input type="checkbox" name="requires_summary"
+                   {% if act.requires_summary %}checked{% endif %}
+                   style="accent-color:var(--purple); width:14px; height:14px;" />
+            resumo
+          </label>
 
-        <label style="display:flex; align-items:center; gap:6px; cursor:pointer;
-                      font-size:0.78rem; font-weight:700; color:var(--text-muted);">
-          <input type="checkbox" name="requires_summary"
-                 {% if act.requires_summary %}checked{% endif %}
-                 style="accent-color:var(--purple); width:14px; height:14px;" />
-          resumo
-        </label>
-
-        <div style="display:flex; gap:6px;">
           <button type="submit" class="tk-btn tk-btn-ghost tk-btn-sm" title="Salvar">
             <i class="bi bi-check-lg"></i>
           </button>
-        </div>
+        </form>
 
-        {# Toggle ativo/inativo (form separado) #}
+        <!-- FORM 2: TOGGLE (Totalmente separado agora) -->
         <form method="POST" action="{{ url_for('supervisor.toggle_atividade', act_id=act.id) }}">
           <button type="submit" class="tk-btn tk-btn-sm"
                   style="{% if act.is_active %}background:rgba(16,185,129,0.1);color:#6ee7b7;border:1px solid rgba(16,185,129,0.3);{% else %}background:rgba(239,68,68,0.1);color:#fca5a5;border:1px solid rgba(239,68,68,0.2);{% endif %}"
@@ -118,8 +116,7 @@
             <i class="bi bi-{% if act.is_active %}toggle-on{% else %}toggle-off{% endif %}"></i>
           </button>
         </form>
-
-      </form>
+      </div>
       {% else %}
       <div style="color:var(--text-muted); font-size:0.85rem; font-weight:600; padding:16px 0;">
         Nenhuma atividade de checklist cadastrada.
@@ -137,28 +134,29 @@
       </div>
 
       {% for act in leader_acts %}
-      <form method="POST" action="{{ url_for('supervisor.editar_atividade', act_id=act.id) }}"
-            style="display:flex; align-items:center; gap:10px; padding:10px 0;
-                   border-bottom:1px solid var(--border); flex-wrap:wrap;">
+      <!-- DIV PAI PARA MANTER O LAYOUT -->
+      <div style="display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--border); flex-wrap:wrap;">
+        
+        <!-- FORM 1: EDITAR -->
+        <form method="POST" action="{{ url_for('supervisor.editar_atividade', act_id=act.id) }}" style="display:flex; flex:1; align-items:center; gap:10px; min-width:200px;">
+          <div style="flex:1;">
+            <input class="tk-input" type="text" name="name" value="{{ act.name }}"
+                   style="font-size:0.88rem; padding:7px 12px;" />
+          </div>
 
-        <div style="flex:1; min-width:160px;">
-          <input class="tk-input" type="text" name="name" value="{{ act.name }}"
-                 style="font-size:0.88rem; padding:7px 12px;" />
-        </div>
+          <div style="display:flex; align-items:center; gap:6px;">
+            <input class="tk-input" type="number" name="default_premiles"
+                   value="{{ act.default_premiles }}" min="1" max="500"
+                   style="width:72px; font-size:0.88rem; padding:7px 10px; text-align:center;" />
+            <span style="font-size:0.72rem; color:var(--text-muted); font-weight:700;">pts</span>
+          </div>
 
-        <div style="display:flex; align-items:center; gap:6px;">
-          <input class="tk-input" type="number" name="default_premiles"
-                 value="{{ act.default_premiles }}" min="1" max="500"
-                 style="width:72px; font-size:0.88rem; padding:7px 10px; text-align:center;" />
-          <span style="font-size:0.72rem; color:var(--text-muted); font-weight:700;">pts</span>
-        </div>
-
-        <div style="display:flex; gap:6px;">
           <button type="submit" class="tk-btn tk-btn-ghost tk-btn-sm" title="Salvar">
             <i class="bi bi-check-lg"></i>
           </button>
-        </div>
+        </form>
 
+        <!-- FORM 2: TOGGLE (Totalmente separado) -->
         <form method="POST" action="{{ url_for('supervisor.toggle_atividade', act_id=act.id) }}">
           <button type="submit" class="tk-btn tk-btn-sm"
                   style="{% if act.is_active %}background:rgba(16,185,129,0.1);color:#6ee7b7;border:1px solid rgba(16,185,129,0.3);{% else %}background:rgba(239,68,68,0.1);color:#fca5a5;border:1px solid rgba(239,68,68,0.2);{% endif %}"
@@ -166,8 +164,7 @@
             <i class="bi bi-{% if act.is_active %}toggle-on{% else %}toggle-off{% endif %}"></i>
           </button>
         </form>
-
-      </form>
+      </div>
       {% else %}
       <div style="color:var(--text-muted); font-size:0.85rem; font-weight:600; padding:16px 0;">
         Nenhuma atividade de lançamento cadastrada.
