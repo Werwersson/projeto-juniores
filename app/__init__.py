@@ -31,7 +31,7 @@ def create_app():
     def load_user(user_id):
         return db.session.get(User, int(user_id))
 
-    # --- REGISTRO DE TODOS OS BLUEPRINTS ---
+   # --- REGISTRO DE TODOS OS BLUEPRINTS ---
     from app.blueprints.auth import auth_bp
     from app.blueprints.supervisor import supervisor_bp
     from app.blueprints.lider import lider_bp
@@ -39,10 +39,11 @@ def create_app():
     from app.blueprints.period import period_bp
 
     app.register_blueprint(auth_bp)
-    app.register_blueprint(supervisor_bp)
-    app.register_blueprint(lider_bp)
-    app.register_blueprint(junior_bp)
+    
+    # Adicionando os prefixos para isolar as rotas
+    app.register_blueprint(supervisor_bp, url_prefix='/supervisor')
+    app.register_blueprint(lider_bp, url_prefix='/lider')
+    app.register_blueprint(junior_bp, url_prefix='/junior')
+    
     app.register_blueprint(period_bp)
     # --------------------------------------
-    
-    return app
