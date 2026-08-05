@@ -1,5 +1,15 @@
-from flask import Blueprint
+from flask import Flask
+from app.extensions import db  # Importando do novo arquivo neutro
 
-period_bp = Blueprint("period", __name__, template_folder="templates")
+def create_app():
+    app = Flask(__name__)
+    
+    # Suas configurações de banco de dados e chaves secretas...
+    
+    db.init_app(app)
 
-from app.blueprints.period import routes  # noqa: E402, F401
+    # O registro dos seus blueprints deve acontecer AQUI
+    from app.blueprints.period import period_bp
+    app.register_blueprint(period_bp)
+    
+    return app
