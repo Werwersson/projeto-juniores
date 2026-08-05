@@ -1,14 +1,15 @@
+import os
 from flask import Flask
-from app.extensions import db  # Importando do novo arquivo neutro
+from app.extensions import db
 
 def create_app():
     app = Flask(__name__)
     
-    # Suas configurações de banco de dados e chaves secretas...
+    # Adicione esta linha para puxar a URL do banco do ambiente
+    app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///local.db')
     
     db.init_app(app)
 
-    # O registro dos seus blueprints deve acontecer AQUI
     from app.blueprints.period import period_bp
     app.register_blueprint(period_bp)
     
