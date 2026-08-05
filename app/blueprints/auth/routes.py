@@ -2,7 +2,7 @@ from flask import render_template, redirect, url_for, flash, request, session
 from flask_login import login_user, logout_user, login_required, current_user
 from app.blueprints.auth import auth_bp
 from app.models.user import User, UserRole
-from app import db
+from app.extensions import db  # Atualizado para evitar importação circular
 
 SENHA_PADRAO = "juniores2025"
 
@@ -28,12 +28,14 @@ def login():
         return redirect(_dashboard_url())
 
     if request.method == "POST":
-        username = request.form.get("username", "").strip().lower()
+        # Recebe o e-mail em vez do username
+        email = request.form.get("email", "").strip().lower()
         password = request.form.get("password", "")
         remember = bool(request.form.get("remember"))
 
+        # Busca no banco filtrando pela coluna email
         user = db.session.execute(
-            db.select(User).where(User.username == username)
+            db.select(User).where(User.email == email)
         ).scalar_one_or_none()
 
         if user and user.check_password(password):
@@ -47,7 +49,7 @@ def login():
                 return redirect(next_page)
             return redirect(_dashboard_url())
 
-        flash("Nome de usuário ou senha incorretos.", "danger")
+        flash("E-mail ou senha incorretos.", "danger")
 
     return render_template("auth/login.html")
 
@@ -137,20 +139,13 @@ def redefinir_senha(token: str):
 def perfil():
     if request.method == "POST":
         name     = request.form.get("name", "").strip()
-        username = request.form.get("username", "").strip().lower()
         email    = request.form.get("email", "").strip().lower() or None
 
         errors = []
         if not name:
             errors.append("Nome é obrigatório.")
-        if not username or len(username) < 3:
-            errors.append("Nome de usuário deve ter ao menos 3 caracteres.")
-
-        conflito_user = db.session.execute(
-            db.select(User).where(User.username == username, User.id != current_user.id)
-        ).scalar_one_or_none()
-        if conflito_user:
-            errors.append(f'O nome de usuário "{username}" já está em uso.')
+        if not email:
+            errors.append("E-mail é obrigatório.")
 
         if email:
             conflito_email = db.session.execute(
@@ -164,9 +159,8 @@ def perfil():
                 flash(e, "danger")
             return render_template("auth/perfil.html")
 
-        current_user.name     = name
-        current_user.username = username
-        current_user.email    = email
+        current_user.name  = name
+        current_user.email = email
         db.session.commit()
         flash("Perfil atualizado com sucesso!", "success")
         return redirect(url_for("auth.perfil"))
