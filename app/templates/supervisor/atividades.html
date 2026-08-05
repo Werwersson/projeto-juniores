@@ -1,0 +1,190 @@
+{% extends "base.html" %}
+{% block title %}Atividades — TeoK!ds.{% endblock %}
+
+{% block content %}
+
+<div class="tk-topbar">
+  <div>
+    <div class="tk-page-title">Configuração de atividades</div>
+    <div class="tk-page-subtitle">Gerencie o checklist e as atividades manuais</div>
+  </div>
+</div>
+
+<div class="row g-4">
+
+  {# ── Formulário nova atividade ── #}
+  <div class="col-12 col-lg-4">
+    <div class="tk-card tk-card-glow-purple">
+      <div style="font-size:0.72rem; font-weight:800; letter-spacing:1px;
+                  text-transform:uppercase; color:var(--text-muted); margin-bottom:20px;">
+        Nova atividade
+      </div>
+
+      <form method="POST" action="{{ url_for('supervisor.nova_atividade') }}">
+
+        <div style="margin-bottom:14px;">
+          <label class="tk-label">Nome <span style="color:#fca5a5;">*</span></label>
+          <input class="tk-input" type="text" name="name" required
+                 placeholder="Ex: Memorização de versículo" />
+        </div>
+
+        <div style="margin-bottom:14px;">
+          <label class="tk-label">Tipo <span style="color:#fca5a5;">*</span></label>
+          <select class="tk-input" name="source" required id="source-select"
+                  onchange="toggleSummary(this.value)">
+            <option value="" disabled selected>Selecionar...</option>
+            <option value="junior">Checklist da criança</option>
+            <option value="leader">Lançamento pelo líder</option>
+          </select>
+        </div>
+
+        <div style="margin-bottom:14px;">
+          <label class="tk-label">Premiles padrão</label>
+          <input class="tk-input" type="number" name="default_premiles"
+                 value="10" min="1" max="500" />
+        </div>
+
+        <div id="campo-resumo" style="margin-bottom:20px; display:none;">
+          <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
+            <input type="checkbox" name="requires_summary"
+                   style="accent-color:var(--purple); width:16px; height:16px;" />
+            <div>
+              <div style="font-size:0.85rem; font-weight:700;">Exige resumo</div>
+              <div style="font-size:0.75rem; color:var(--text-muted); font-weight:600;">
+                A criança deve escrever um texto ao marcar
+              </div>
+            </div>
+          </label>
+        </div>
+
+        <button type="submit" class="tk-btn tk-btn-purple"
+                style="width:100%; justify-content:center;">
+          <i class="bi bi-plus-circle-fill"></i> Criar atividade
+        </button>
+      </form>
+    </div>
+  </div>
+
+  {# ── Listas de atividades ── #}
+  <div class="col-12 col-lg-8">
+
+    {# Checklist da criança #}
+    <div class="tk-card mb-3">
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:16px;">
+        <span class="tk-badge tk-badge-junior"><i class="bi bi-check2-circle me-1"></i>Checklist da criança</span>
+        <span style="font-size:0.78rem; color:var(--text-muted); font-weight:600;">
+          {{ junior_acts | length }} atividade{{ 's' if junior_acts|length != 1 }}
+        </span>
+      </div>
+
+      {% for act in junior_acts %}
+      <form method="POST" action="{{ url_for('supervisor.editar_atividade', act_id=act.id) }}"
+            style="display:flex; align-items:center; gap:10px; padding:10px 0;
+                   border-bottom:1px solid var(--border); flex-wrap:wrap;"
+            id="form-act-{{ act.id }}">
+
+        <div style="flex:1; min-width:160px;">
+          <input class="tk-input" type="text" name="name" value="{{ act.name }}"
+                 style="font-size:0.88rem; padding:7px 12px;"
+                 {% if not act.is_active %}style="opacity:0.5;"{% endif %} />
+        </div>
+
+        <div style="display:flex; align-items:center; gap:6px;">
+          <input class="tk-input" type="number" name="default_premiles"
+                 value="{{ act.default_premiles }}" min="1" max="500"
+                 style="width:72px; font-size:0.88rem; padding:7px 10px; text-align:center;" />
+          <span style="font-size:0.72rem; color:var(--text-muted); font-weight:700;">pts</span>
+        </div>
+
+        <label style="display:flex; align-items:center; gap:6px; cursor:pointer;
+                      font-size:0.78rem; font-weight:700; color:var(--text-muted);">
+          <input type="checkbox" name="requires_summary"
+                 {% if act.requires_summary %}checked{% endif %}
+                 style="accent-color:var(--purple); width:14px; height:14px;" />
+          resumo
+        </label>
+
+        <div style="display:flex; gap:6px;">
+          <button type="submit" class="tk-btn tk-btn-ghost tk-btn-sm" title="Salvar">
+            <i class="bi bi-check-lg"></i>
+          </button>
+        </div>
+
+        {# Toggle ativo/inativo (form separado) #}
+        <form method="POST" action="{{ url_for('supervisor.toggle_atividade', act_id=act.id) }}">
+          <button type="submit" class="tk-btn tk-btn-sm"
+                  style="{% if act.is_active %}background:rgba(16,185,129,0.1);color:#6ee7b7;border:1px solid rgba(16,185,129,0.3);{% else %}background:rgba(239,68,68,0.1);color:#fca5a5;border:1px solid rgba(239,68,68,0.2);{% endif %}"
+                  title="{{ 'Desativar' if act.is_active else 'Ativar' }}">
+            <i class="bi bi-{% if act.is_active %}toggle-on{% else %}toggle-off{% endif %}"></i>
+          </button>
+        </form>
+
+      </form>
+      {% else %}
+      <div style="color:var(--text-muted); font-size:0.85rem; font-weight:600; padding:16px 0;">
+        Nenhuma atividade de checklist cadastrada.
+      </div>
+      {% endfor %}
+    </div>
+
+    {# Lançamento pelo líder #}
+    <div class="tk-card">
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:16px;">
+        <span class="tk-badge tk-badge-lider"><i class="bi bi-pencil-fill me-1"></i>Lançamento pelo líder</span>
+        <span style="font-size:0.78rem; color:var(--text-muted); font-weight:600;">
+          {{ leader_acts | length }} atividade{{ 's' if leader_acts|length != 1 }}
+        </span>
+      </div>
+
+      {% for act in leader_acts %}
+      <form method="POST" action="{{ url_for('supervisor.editar_atividade', act_id=act.id) }}"
+            style="display:flex; align-items:center; gap:10px; padding:10px 0;
+                   border-bottom:1px solid var(--border); flex-wrap:wrap;">
+
+        <div style="flex:1; min-width:160px;">
+          <input class="tk-input" type="text" name="name" value="{{ act.name }}"
+                 style="font-size:0.88rem; padding:7px 12px;" />
+        </div>
+
+        <div style="display:flex; align-items:center; gap:6px;">
+          <input class="tk-input" type="number" name="default_premiles"
+                 value="{{ act.default_premiles }}" min="1" max="500"
+                 style="width:72px; font-size:0.88rem; padding:7px 10px; text-align:center;" />
+          <span style="font-size:0.72rem; color:var(--text-muted); font-weight:700;">pts</span>
+        </div>
+
+        <div style="display:flex; gap:6px;">
+          <button type="submit" class="tk-btn tk-btn-ghost tk-btn-sm" title="Salvar">
+            <i class="bi bi-check-lg"></i>
+          </button>
+        </div>
+
+        <form method="POST" action="{{ url_for('supervisor.toggle_atividade', act_id=act.id) }}">
+          <button type="submit" class="tk-btn tk-btn-sm"
+                  style="{% if act.is_active %}background:rgba(16,185,129,0.1);color:#6ee7b7;border:1px solid rgba(16,185,129,0.3);{% else %}background:rgba(239,68,68,0.1);color:#fca5a5;border:1px solid rgba(239,68,68,0.2);{% endif %}"
+                  title="{{ 'Desativar' if act.is_active else 'Ativar' }}">
+            <i class="bi bi-{% if act.is_active %}toggle-on{% else %}toggle-off{% endif %}"></i>
+          </button>
+        </form>
+
+      </form>
+      {% else %}
+      <div style="color:var(--text-muted); font-size:0.85rem; font-weight:600; padding:16px 0;">
+        Nenhuma atividade de lançamento cadastrada.
+      </div>
+      {% endfor %}
+    </div>
+
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+function toggleSummary(val) {
+  document.getElementById('campo-resumo').style.display =
+    val === 'junior' ? 'block' : 'none';
+}
+</script>
+{% endblock %}

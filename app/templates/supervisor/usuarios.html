@@ -77,17 +77,23 @@
           {% endif %}
         </td>
         <td>
-          <div style="display:flex; gap:6px;">
+          <div style="display:flex; gap:6px; flex-wrap:wrap;">
             <a href="{{ url_for('supervisor.editar_usuario', user_id=u.id) }}"
-               class="tk-btn tk-btn-ghost tk-btn-sm">
+               class="tk-btn tk-btn-ghost tk-btn-sm" title="Editar usuário">
               <i class="bi bi-pencil"></i>
             </a>
+            <form method="POST" action="{{ url_for('supervisor.gerar_link_reset', user_id=u.id) }}"
+                  onsubmit="return confirm('Gerar link de recuperação de senha para {{ u.name }}?')">
+              <button type="submit" class="tk-btn tk-btn-sm tk-btn-ghost" title="Gerar link de recuperação de senha">
+                <i class="bi bi-key-fill"></i>
+              </button>
+            </form>
             {% if u.id != current_user.id %}
             <form method="POST"
                   action="{{ url_for('supervisor.excluir_usuario', user_id=u.id) }}"
                   onsubmit="return confirm('Excluir {{ u.name }}? Esta ação não pode ser desfeita.')">
               <button type="submit" class="tk-btn tk-btn-sm"
-                      style="background:rgba(239,68,68,0.1); color:#fca5a5; border:1px solid rgba(239,68,68,0.2);">
+                      style="background:rgba(239,68,68,0.1); color:#fca5a5; border:1px solid rgba(239,68,68,0.2);" title="Excluir usuário">
                 <i class="bi bi-trash"></i>
               </button>
             </form>

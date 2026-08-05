@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Redefinir senha — TeoK!ds.{% endblock %}
+
+{% block content %}
+<div class="tk-login-bg">
+  <div class="tk-login-card">
+
+    <div style="text-align:center; margin-bottom:28px;">
+      <div style="width:56px; height:56px; border-radius:50%;
+                  background:linear-gradient(135deg,rgba(16,185,129,.2),rgba(6,182,212,.2));
+                  border:1px solid rgba(16,185,129,.3);
+                  display:flex; align-items:center; justify-content:center;
+                  font-size:1.6rem; margin:0 auto 14px;">🔑</div>
+      <div class="tk-logo-text" style="font-size:1.4rem; margin-bottom:4px;">
+        TeoK<span style="-webkit-text-fill-color:#fff">!</span>ds<span style="-webkit-text-fill-color:#fff">.</span>
+      </div>
+      <div style="font-size:0.9rem; font-weight:700; color:var(--text);">
+        Olá, {{ user.name }}! Defina sua nova senha.
+      </div>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}{% for category, message in messages %}
+        <div class="tk-alert tk-alert-{{ category }}" style="margin-bottom:12px;">
+          <i class="bi bi-exclamation-circle-fill"></i> {{ message }}
+        </div>
+      {% endfor %}{% endif %}
+    {% endwith %}
+
+    <form method="POST">
+      <div style="margin-bottom:16px;">
+        <label class="tk-label" for="nova_senha">Nova senha</label>
+        <input class="tk-input" type="password" id="nova_senha" name="nova_senha"
+               placeholder="Mínimo 6 caracteres" required autocomplete="new-password"
+               oninput="checkSenha()" />
+      </div>
+      <div style="margin-bottom:24px;">
+        <label class="tk-label" for="confirmar">Confirmar nova senha</label>
+        <input class="tk-input" type="password" id="confirmar" name="confirmar"
+               placeholder="Repita a nova senha" required autocomplete="new-password"
+               oninput="checkSenha()" />
+        <div id="feedback" style="font-size:0.75rem; font-weight:700; margin-top:6px; min-height:18px;"></div>
+      </div>
+      <button type="submit" class="tk-btn tk-btn-purple"
+              style="width:100%; justify-content:center; padding:13px;">
+        <i class="bi bi-check-circle-fill"></i> Salvar nova senha
+      </button>
+    </form>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function checkSenha() {
+  const n = document.getElementById('nova_senha').value;
+  const c = document.getElementById('confirmar').value;
+  const fb = document.getElementById('feedback');
+  if (!c) { fb.textContent=''; return; }
+  if (n === c && n.length >= 6) { fb.textContent='✅ Senhas coincidem'; fb.style.color='#6ee7b7'; }
+  else if (n !== c) { fb.textContent='❌ Senhas não coincidem'; fb.style.color='#fca5a5'; }
+  else { fb.textContent='⚠️ Mínimo 6 caracteres'; fb.style.color='#fdba74'; }
+}
+</script>
+{% endblock %}

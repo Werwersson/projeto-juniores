@@ -105,3 +105,29 @@ s.textContent = '@keyframes tkcair{0%{transform:translateY(0) rotate(0deg);opaci
 document.head.appendChild(s);
 
 document.addEventListener('DOMContentLoaded', inicializarChecklist);
+
+// ── Proteção contra duplo clique em qualquer form de ação ────────────────────
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('form').forEach(function(form) {
+    form.addEventListener('submit', function() {
+      var btns = form.querySelectorAll('button[type="submit"]');
+      btns.forEach(function(btn) {
+        btn.disabled = true;
+        if (!btn.classList.contains('tk-check-item')) {
+          btn.style.opacity = '0.6';
+          btn.innerHTML = '<span style="display:inline-flex;align-items:center;gap:6px;">'
+            + '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+            + 'stroke-width="2.5" style="animation:tkspin 0.8s linear infinite">'
+            + '<path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83'
+            + 'M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>'
+            + ' Aguarde...</span>';
+        }
+      });
+    });
+  });
+});
+
+// Injeta keyframe de spin
+var s2 = document.createElement('style');
+s2.textContent = '@keyframes tkspin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}';
+document.head.appendChild(s2);

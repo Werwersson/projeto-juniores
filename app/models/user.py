@@ -1,4 +1,6 @@
 import enum
+import secrets
+from datetime import datetime, timedelta
 from app import db, login_manager
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -14,15 +16,19 @@ class User(UserMixin, db.Model):
     __tablename__ = "users"
 
     id            = db.Column(db.Integer, primary_key=True)
-    name          = db.Column(db.String(120), nullable=False)          # Nome exibido
-    username      = db.Column(db.String(60), unique=True, nullable=False, index=True)  # Login
-    email         = db.Column(db.String(120), unique=True, nullable=True, index=True)  # Opcional
+    name          = db.Column(db.String(120), nullable=False)
+    username      = db.Column(db.String(60), unique=True, nullable=False, index=True)
+    email         = db.Column(db.String(120), unique=True, nullable=True, index=True)
     password_hash = db.Column(db.String(256), nullable=False)
     role          = db.Column(db.Enum(UserRole), nullable=False, default=UserRole.JUNIOR)
     pgm_id        = db.Column(db.Integer, db.ForeignKey("pgms.id"), nullable=True)
-    created_at    = db.Column(db.DateTime, server_default=db.func.now())
 
-    # Relacionamentos com cascade
+    # Recuperação de senha
+    reset_token        = db.Column(db.String(64), nullable=True, unique=True, index=True)
+    reset_token_expiry = db.Column(db.DateTime, nullable=True)
+
+    created_at = db.Column(db.DateTime, server_default=db.func.now())
+
     pgm           = db.relationship("PGM", back_populates="juniors", foreign_keys=[pgm_id])
     led_pgms      = db.relationship("PGMLeader", back_populates="leader",
                                     cascade="all, delete-orphan")
@@ -40,6 +46,22 @@ class User(UserMixin, db.Model):
 
     def check_password(self, password: str) -> bool:
         return check_password_hash(self.password_hash, password)
+
+    def generate_reset_token(self, hours: int = 24) -> str:
+        """Gera token seguro de recuperação de senha válido por N horas."""
+        self.reset_token = secrets.token_urlsafe(32)
+        self.reset_token_expiry = datetime.now() + timedelta(hours=hours)
+        return self.reset_token
+
+    def clear_reset_token(self) -> None:
+        self.reset_token = None
+        self.reset_token_expiry = None
+
+    @property
+    def reset_token_valid(self) -> bool:
+        if not self.reset_token or not self.reset_token_expiry:
+            return False
+        return datetime.now() < self.reset_token_expiry
 
     @property
     def is_supervisor(self) -> bool:

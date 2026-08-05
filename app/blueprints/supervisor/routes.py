@@ -288,3 +288,244 @@ def relatorio_pdf():
 def relatorios():
     pgms = db.session.execute(db.select(PGM)).scalars().all()
     return render_template("supervisor/relatorios.html", pgms=pgms)
+
+
+# ── Recuperação de senha ──────────────────────────────────────────────────────
+
+@supervisor_bp.route("/usuarios/<int:user_id>/gerar-link", methods=["POST"])
+@login_required
+@requires_role(UserRole.SUPERVISOR)
+def gerar_link_reset(user_id):
+    from flask import request as req
+    user = db.get_or_404(User, user_id)
+    token = user.generate_reset_token(hours=24)
+    db.session.commit()
+    link = req.host_url.rstrip("/") + f"/redefinir/{token}"
+    flash(
+        f"Link gerado para {user.name} (válido por 24h). "
+        f"Copie e envie pelo WhatsApp: {link}",
+        "info"
+    )
+    return redirect(url_for("supervisor.usuarios"))
+
+
+# ── Configuração de atividades ────────────────────────────────────────────────
+
+@supervisor_bp.route("/atividades")
+@login_required
+@requires_role(UserRole.SUPERVISOR)
+def atividades():
+    from app.models.activity import ActivityType, ActivitySource
+    leader_acts = db.session.execute(
+        db.select(ActivityType)
+        .where(ActivityType.source == ActivitySource.LEADER)
+        .order_by(ActivityType.name)
+    ).scalars().all()
+    junior_acts = db.session.execute(
+        db.select(ActivityType)
+        .where(ActivityType.source == ActivitySource.JUNIOR)
+        .order_by(ActivityType.name)
+    ).scalars().all()
+    return render_template("supervisor/atividades.html",
+                           leader_acts=leader_acts, junior_acts=junior_acts)
+
+
+@supervisor_bp.route("/atividades/nova", methods=["POST"])
+@login_required
+@requires_role(UserRole.SUPERVISOR)
+def nova_atividade():
+    from app.models.activity import ActivityType, ActivitySource
+    name             = request.form.get("name", "").strip()
+    source           = request.form.get("source", "")
+    default_premiles = int(request.form.get("default_premiles", 10))
+    requires_summary = bool(request.form.get("requires_summary"))
+
+    if not name:
+        flash("Nome da atividade é obrigatório.", "danger")
+        return redirect(url_for("supervisor.atividades"))
+    if source not in ["leader", "junior"]:
+        flash("Tipo inválido.", "danger")
+        return redirect(url_for("supervisor.atividades"))
+
+    exists = db.session.execute(
+        db.select(ActivityType).where(ActivityType.name == name)
+    ).scalar_one_or_none()
+    if exists:
+        flash(f'Já existe uma atividade chamada "{name}".', "warning")
+        return redirect(url_for("supervisor.atividades"))
+
+    db.session.add(ActivityType(
+        name=name,
+        source=ActivitySource(source),
+        default_premiles=default_premiles,
+        requires_summary=requires_summary,
+    ))
+    db.session.commit()
+    flash(f'Atividade "{name}" criada com sucesso!', "success")
+    return redirect(url_for("supervisor.atividades"))
+
+
+@supervisor_bp.route("/atividades/<int:act_id>/editar", methods=["POST"])
+@login_required
+@requires_role(UserRole.SUPERVISOR)
+def editar_atividade(act_id):
+    from app.models.activity import ActivityType
+    act = db.get_or_404(ActivityType, act_id)
+    act.name             = request.form.get("name", act.name).strip()
+    act.default_premiles = int(request.form.get("default_premiles", act.default_premiles))
+    act.requires_summary = bool(request.form.get("requires_summary"))
+    db.session.commit()
+    flash(f'Atividade "{act.name}" atualizada.', "success")
+    return redirect(url_for("supervisor.atividades"))
+
+
+@supervisor_bp.route("/atividades/<int:act_id>/toggle", methods=["POST"])
+@login_required
+@requires_role(UserRole.SUPERVISOR)
+def toggle_atividade(act_id):
+    from app.models.activity import ActivityType
+    act = db.get_or_404(ActivityType, act_id)
+    act.is_active = not act.is_active
+    db.session.commit()
+    estado = "ativada" if act.is_active else "desativada"
+    flash(f'Atividade "{act.name}" {estado}.', "info")
+    return redirect(url_for("supervisor.atividades"))
+
+
+# ── Exportação do resultado de um período específico ──────────────────────────
+
+@supervisor_bp.route("/periodos/<int:periodo_id>/exportar/excel")
+@login_required
+@requires_role(UserRole.SUPERVISOR)
+def exportar_periodo_excel(periodo_id):
+    from flask import send_file
+    from app.models.period import Period, PeriodSnapshot
+    from app.models.pgm import PGM
+    import io, openpyxl
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    from openpyxl.utils import get_column_letter
+    from datetime import datetime
+
+    periodo = db.get_or_404(Period, periodo_id)
+    snapshots = db.session.execute(
+        db.select(PeriodSnapshot)
+        .where(PeriodSnapshot.period_id == periodo_id)
+        .order_by(PeriodSnapshot.position)
+    ).scalars().all()
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Resultado"
+    ws.sheet_view.showGridLines = False
+
+    ROXO  = "FF7C3AED"
+    CINZA = "FF888888"
+    BRANCO = "FFFFFFFF"
+    LARANJA = "FFF97316"
+    BG   = "FF141414"
+    BG2  = "FF1C1C1C"
+    thin = Side(style="thin", color="FF2A2A2A")
+    borda = Border(left=thin, right=thin, top=thin, bottom=thin)
+
+    # Título
+    ws.merge_cells("A1:E1")
+    c = ws["A1"]
+    c.value = f"Resultado — {periodo.name}"
+    c.font = Font(name="Calibri", bold=True, size=14, color=BRANCO)
+    c.fill = PatternFill("solid", fgColor=ROXO)
+    c.alignment = Alignment(horizontal="center", vertical="center")
+    ws.row_dimensions[1].height = 32
+
+    ws.merge_cells("A2:E2")
+    c = ws["A2"]
+    c.value = (f"{periodo.start_date.strftime('%d/%m/%Y')} → "
+               f"{periodo.end_date.strftime('%d/%m/%Y') if periodo.end_date else 'em aberto'}"
+               f" · Exportado em {datetime.now().strftime('%d/%m/%Y %H:%M')}")
+    c.font = Font(name="Calibri", size=9, color=CINZA)
+    c.fill = PatternFill("solid", fgColor=BG)
+    c.alignment = Alignment(horizontal="center")
+    ws.row_dimensions[2].height = 16
+
+    linha = 4
+    headers = ["Pos.", "Nome", "PGM", "Premiles", "Pos. PGM"]
+    for col, h in enumerate(headers, 1):
+        c = ws.cell(row=linha, column=col, value=h)
+        c.font = Font(name="Calibri", bold=True, size=9, color=CINZA)
+        c.fill = PatternFill("solid", fgColor=BG)
+        c.alignment = Alignment(horizontal="center")
+        c.border = borda
+    ws.row_dimensions[linha].height = 18
+    linha += 1
+
+    for snap in snapshots:
+        medalha = {1:"🥇",2:"🥈",3:"🥉"}.get(snap.position, f"{snap.position}º")
+        fill = BG if snap.position % 2 == 1 else BG2
+        dados = [medalha, snap.junior.name,
+                 snap.pgm.name if snap.pgm else "—",
+                 snap.total_premiles,
+                 f"{snap.pgm_position}º" if snap.pgm_position else "—"]
+        for col, val in enumerate(dados, 1):
+            c = ws.cell(row=linha, column=col, value=val)
+            c.font = Font(name="Calibri", size=10,
+                          color=LARANJA if col == 4 else BRANCO,
+                          bold=(col == 4))
+            c.fill = PatternFill("solid", fgColor=fill)
+            c.alignment = Alignment(horizontal="center" if col != 2 else "left", indent=1 if col==2 else 0)
+            c.border = borda
+        ws.row_dimensions[linha].height = 20
+        linha += 1
+
+    for col, larg in zip(range(1,6), [8, 26, 18, 12, 10]):
+        ws.column_dimensions[get_column_letter(col)].width = larg
+
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    nome = f"resultado_{periodo.name.replace(' ','_')}_{datetime.now().strftime('%Y%m%d')}.xlsx"
+    return send_file(buf,
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        as_attachment=True, download_name=nome)
+
+
+@supervisor_bp.route("/periodos/<int:periodo_id>/exportar/pdf")
+@login_required
+@requires_role(UserRole.SUPERVISOR)
+def exportar_periodo_pdf(periodo_id):
+    from flask import send_file
+    from app.models.period import Period, PeriodSnapshot
+    from app.services.relatorio_service import gerar_pdf
+    from datetime import datetime
+    import io
+
+    periodo = db.get_or_404(Period, periodo_id)
+    snapshots = db.session.execute(
+        db.select(PeriodSnapshot)
+        .where(PeriodSnapshot.period_id == periodo_id)
+        .order_by(PeriodSnapshot.position)
+    ).scalars().all()
+
+    # Agrupa snapshots por PGM simulando estrutura de pgms
+    class FakePGM:
+        def __init__(self, name, juniors):
+            self.name = name
+            self.juniors = juniors
+
+    class FakeJunior:
+        def __init__(self, snap):
+            self.name = snap.junior.name
+            self.balance = type("b", (), {"total_balance": snap.total_premiles})()
+
+    pgm_map = {}
+    for snap in snapshots:
+        pgm_name = snap.pgm.name if snap.pgm else "Sem PGM"
+        if pgm_name not in pgm_map:
+            pgm_map[pgm_name] = []
+        pgm_map[pgm_name].append(FakeJunior(snap))
+
+    fake_pgms = [FakePGM(name, juniors) for name, juniors in pgm_map.items()]
+    titulo = f"Resultado — {periodo.name}"
+    buf = gerar_pdf(fake_pgms, titulo=titulo)
+
+    nome = f"resultado_{periodo.name.replace(' ','_')}_{datetime.now().strftime('%Y%m%d')}.pdf"
+    return send_file(buf, mimetype="application/pdf",
+                     as_attachment=True, download_name=nome)

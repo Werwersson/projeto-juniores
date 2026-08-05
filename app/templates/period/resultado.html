@@ -21,10 +21,12 @@
 
   {# Botões de exportação #}
   <div style="display:flex; gap:8px; flex-wrap:wrap;">
-    <a href="{{ url_for('supervisor.relatorio_excel') }}" class="tk-btn tk-btn-ghost tk-btn-sm">
+    <a href="{{ url_for('supervisor.exportar_periodo_excel', periodo_id=periodo.id) }}"
+       class="tk-btn tk-btn-ghost tk-btn-sm">
       <i class="bi bi-file-earmark-excel-fill"></i> Excel
     </a>
-    <a href="{{ url_for('supervisor.relatorio_pdf') }}" class="tk-btn tk-btn-ghost tk-btn-sm">
+    <a href="{{ url_for('supervisor.exportar_periodo_pdf', periodo_id=periodo.id) }}"
+       class="tk-btn tk-btn-ghost tk-btn-sm">
       <i class="bi bi-file-earmark-pdf-fill"></i> PDF
     </a>
   </div>
