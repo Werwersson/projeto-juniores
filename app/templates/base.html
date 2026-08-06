@@ -45,6 +45,28 @@
     .tk-sidebar-footer {
       flex: 0 0 auto;
     }
+    /* Evita que o nome do usuário empurre os ícones de
+       "trocar senha" / "sair" para fora da sidebar */
+    .tk-user-pill {
+      display: flex;
+      align-items: center;
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+    }
+    .tk-user-info {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+    .tk-user-name,
+    .tk-user-role {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .tk-user-pill > div:last-child {
+      flex: 0 0 auto;
+    }
   </style>
 
   {% block head %}{% endblock %}
