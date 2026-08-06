@@ -33,18 +33,19 @@ def create_app(config_name="production"):
     login_manager.login_message_category = "info"
 
     with app.app_context():
-        # Importando os blueprints
+# Importando os blueprints
         from .blueprints.auth import auth_bp
         from .blueprints.junior import junior_bp
         from .blueprints.lider import lider_bp
         from .blueprints.supervisor import supervisor_bp
         from .blueprints.period import period_bp
         
-        # Registrando no app
-        app.register_blueprint(auth_bp)
-        app.register_blueprint(junior_bp)
-        app.register_blueprint(lider_bp)
-        app.register_blueprint(supervisor_bp)
-        app.register_blueprint(period_bp)
+        # Registrando no app (com prefixos para evitar colisão!)
+        app.register_blueprint(auth_bp) # Auth fica sem prefixo para o /login funcionar
+        
+        app.register_blueprint(junior_bp, url_prefix='/junior')
+        app.register_blueprint(lider_bp, url_prefix='/lider')
+        app.register_blueprint(supervisor_bp, url_prefix='/supervisor')
+        app.register_blueprint(period_bp, url_prefix='/periodo')
         
     return app
