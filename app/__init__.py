@@ -12,10 +12,7 @@ def create_app(config_name="production"):
     
     # 1. Configura a chave secreta
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'chave-super-secreta')
-    
-    # 2. Configura a URL do banco de dados do Vercel
-    db_url = os.environ.get('POSTGRES_URL') or os.environ.get('DATABASE_URL') or 'sqlite:///banco_local.db'
-    
+        
     # Corrige a URL do Postgres se necessário (exigência do SQLAlchemy atual)
     if db_url.startswith("postgres://"):
         db_url = db_url.replace("postgres://", "postgresql://", 1)
