@@ -1,7 +1,7 @@
 import enum
 import secrets
 from datetime import datetime, timedelta
-from app.extensions import db, login_manager
+from app import db, login_manager
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 
@@ -17,7 +17,7 @@ class User(UserMixin, db.Model):
 
     id            = db.Column(db.Integer, primary_key=True)
     name          = db.Column(db.String(120), nullable=False)
-    email         = db.Column(db.String(120), unique=True, nullable=True, index=True)
+    email         = db.Column(db.String(120), unique=True, nullable=False, index=True)
     password_hash = db.Column(db.String(256), nullable=False)
     role          = db.Column(db.Enum(UserRole), nullable=False, default=UserRole.JUNIOR)
     pgm_id        = db.Column(db.Integer, db.ForeignKey("pgms.id"), nullable=True)
@@ -28,17 +28,17 @@ class User(UserMixin, db.Model):
 
     created_at = db.Column(db.DateTime, server_default=db.func.now())
 
-    pgm           = db.relationship("PGM", back_populates="juniors", foreign_keys=[pgm_id])
-    led_pgms      = db.relationship("PGMLeader", back_populates="leader",
-                                    cascade="all, delete-orphan")
-    balance       = db.relationship("PremilesBalance", back_populates="junior",
-                                    uselist=False, cascade="all, delete-orphan")
+    pgm            = db.relationship("PGM", back_populates="juniors", foreign_keys=[pgm_id])
+    led_pgms       = db.relationship("PGMLeader", back_populates="leader",
+                                     cascade="all, delete-orphan")
+    balance        = db.relationship("PremilesBalance", back_populates="junior",
+                                     uselist=False, cascade="all, delete-orphan")
     checklist_logs = db.relationship("ChecklistLog", back_populates="junior",
                                      foreign_keys="ChecklistLog.junior_id",
                                      cascade="all, delete-orphan")
-    manual_logs   = db.relationship("ManualLog", back_populates="junior",
-                                    foreign_keys="ManualLog.junior_id",
-                                    cascade="all, delete-orphan")
+    manual_logs    = db.relationship("ManualLog", back_populates="junior",
+                                     foreign_keys="ManualLog.junior_id",
+                                     cascade="all, delete-orphan")
 
     def set_password(self, password: str) -> None:
         self.password_hash = generate_password_hash(password)
@@ -47,7 +47,6 @@ class User(UserMixin, db.Model):
         return check_password_hash(self.password_hash, password)
 
     def generate_reset_token(self, hours: int = 24) -> str:
-        """Gera token seguro de recuperação de senha válido por N horas."""
         self.reset_token = secrets.token_urlsafe(32)
         self.reset_token_expiry = datetime.now() + timedelta(hours=hours)
         return self.reset_token
@@ -62,17 +61,25 @@ class User(UserMixin, db.Model):
             return False
         return datetime.now() < self.reset_token_expiry
 
+    # ── Helpers de role — robustos a String e Enum ───────────────────────────
+    def _role_str(self) -> str:
+        """Retorna o valor do role sempre como string lower, independente do tipo."""
+        r = self.role
+        if isinstance(r, UserRole):
+            return r.value
+        return str(r).lower().replace("userrole.", "").replace("'", "").strip()
+
     @property
     def is_supervisor(self) -> bool:
-        return self.role == UserRole.SUPERVISOR
+        return self._role_str() == "supervisor"
 
     @property
     def is_lider(self) -> bool:
-        return self.role == UserRole.LIDER
+        return self._role_str() == "lider"
 
     @property
     def is_junior(self) -> bool:
-        return self.role == UserRole.JUNIOR
+        return self._role_str() == "junior"
 
     def manages_pgm(self, pgm_id: int) -> bool:
         if self.is_supervisor:
@@ -82,7 +89,7 @@ class User(UserMixin, db.Model):
         return False
 
     def __repr__(self) -> str:
-        return f"<User {self.username} [{self.role}]>"
+        return f"<User {self.email} [{self.role}]>"
 
 
 @login_manager.user_loader

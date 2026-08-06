@@ -11,9 +11,7 @@ Uso (da raiz do projeto):
 from app import db
 from app.models.pgm import PGM, PGMLeader
 from app.models.user import User, UserRole
-from app.models.activity import ActivityType, ActivitySource
-from app.models.activity import PremilesBalance
-
+from app.models.activity import ActivityType, ActivitySource, PremilesBalance
 
 PGMS_DATA = [
     {"name": "PGM 1"},
@@ -22,21 +20,20 @@ PGMS_DATA = [
 ]
 
 SUPERVISORS = [
-    {"name": "Everson",  "username": "everson"},
-    {"name": "Keyla",    "username": "keyla"},
+    {"name": "Everson", "email": "everson@juniores.app"},
+    {"name": "Keyla",   "email": "keyla@juniores.app"},
 ]
 
 LEADERS = [
-    # (nome, username, índice do PGM 0-based)
-    ("Ivan",             "ivan",           0),
-    ("Cida",             "cida",           0),
-    ("Jaciara",          "jaciara",        0),
-    ("Valter Vitoria",   "valter",         1),
-    ("Ana Paula",        "anapaula",       1),
-    ("Sanmaria",         "sanmaria",       1),
-    ("Leo",              "leo",            2),
-    ("Katiuscia",        "katiuscia",      2),
-    ("Natália Lourenço", "natalia",        2),
+    ("Ivan",             "ivan@juniores.app",        0),
+    ("Cida",             "cida@juniores.app",         0),
+    ("Jaciara",          "jaciara@juniores.app",      0),
+    ("Valter Vitoria",   "valter@juniores.app",       1),
+    ("Ana Paula",        "anapaula@juniores.app",     1),
+    ("Sanmaria",         "sanmaria@juniores.app",     1),
+    ("Leo",              "leo@juniores.app",          2),
+    ("Katiuscia",        "katiuscia@juniores.app",    2),
+    ("Natália Lourenço", "natalia@juniores.app",      2),
 ]
 
 LEADER_ACTIVITIES = [
@@ -48,16 +45,16 @@ LEADER_ACTIVITIES = [
 ]
 
 JUNIOR_ACTIVITIES = [
-    ("Leitura diária",          10, True),   # requires_summary=True
-    ("Estudo da lição",         10, False),
-    ("5 minutos com Deus",      10, False),
+    ("Leitura diária",     10, True),
+    ("Estudo da lição",    10, False),
+    ("5 minutos com Deus", 10, False),
 ]
 
 DEFAULT_PASSWORD = "juniores2025"
 
 
 def seed():
-    # ── PGMs ──────────────────────────────────────────────────────────────────
+    # PGMs
     pgms = []
     for data in PGMS_DATA:
         existing = db.session.execute(
@@ -71,42 +68,36 @@ def seed():
             pgms.append(existing)
     db.session.flush()
 
-    # ── Supervisores ──────────────────────────────────────────────────────────
+    # Supervisores
     for s in SUPERVISORS:
         existing = db.session.execute(
-            db.select(User).where(User.username == s["username"])
+            db.select(User).where(User.email == s["email"])
         ).scalar_one_or_none()
         if not existing:
-            user = User(
-                name=s["name"],
-                username=s["username"],
-                role=UserRole.SUPERVISOR,
-            )
+            user = User(name=s["name"], email=s["email"], role=UserRole.SUPERVISOR)
             user.set_password(DEFAULT_PASSWORD)
             db.session.add(user)
 
-    # ── Líderes ───────────────────────────────────────────────────────────────
-    for name, username, pgm_idx in LEADERS:
+    # Líderes
+    for name, email, pgm_idx in LEADERS:
         existing = db.session.execute(
-            db.select(User).where(User.username == username)
+            db.select(User).where(User.email == email)
         ).scalar_one_or_none()
         if not existing:
-            user = User(name=name, username=username, role=UserRole.LIDER)
+            user = User(name=name, email=email, role=UserRole.LIDER)
             user.set_password(DEFAULT_PASSWORD)
             db.session.add(user)
             db.session.flush()
             db.session.add(PGMLeader(user_id=user.id, pgm_id=pgms[pgm_idx].id))
 
-    # ── Atividades ────────────────────────────────────────────────────────────
+    # Atividades
     for act_name, pts in LEADER_ACTIVITIES:
         existing = db.session.execute(
             db.select(ActivityType).where(ActivityType.name == act_name)
         ).scalar_one_or_none()
         if not existing:
             db.session.add(ActivityType(
-                name=act_name,
-                source=ActivitySource.LEADER,
-                default_premiles=pts,
+                name=act_name, source=ActivitySource.LEADER, default_premiles=pts
             ))
 
     for act_name, pts, req_summary in JUNIOR_ACTIVITIES:
@@ -115,16 +106,12 @@ def seed():
         ).scalar_one_or_none()
         if not existing:
             db.session.add(ActivityType(
-                name=act_name,
-                source=ActivitySource.JUNIOR,
-                default_premiles=pts,
-                requires_summary=req_summary,
+                name=act_name, source=ActivitySource.JUNIOR,
+                default_premiles=pts, requires_summary=req_summary
             ))
 
     db.session.commit()
-    print("✅ Seed concluído!")
-    print(f"   Senha padrão de todos: {DEFAULT_PASSWORD}")
-    print("   Usuários criados:")
-    print("     Supervisores: everson, keyla")
-    print("     Líderes: ivan, cida, jaciara, valter, anapaula, sanmaria, leo, katiuscia, natalia")
+    print("✅ Seed concluído! Senha padrão:", DEFAULT_PASSWORD)
+    print("   Supervisores: everson@juniores.app, keyla@juniores.app")
+    print("   Líderes: ivan@, cida@, jaciara@, valter@, anapaula@, sanmaria@, leo@, katiuscia@, natalia@juniores.app")
     print("⚠️  Solicite a troca de senha no primeiro acesso.")

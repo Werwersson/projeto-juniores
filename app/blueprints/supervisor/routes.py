@@ -85,13 +85,12 @@ def novo_usuario():
         if not name:
             errors.append("Nome completo é obrigatório.")
         if not email:
-            errors.append("O E-mail é obrigatório para o login.")
+            errors.append("E-mail é obrigatório.")
         if role not in [r.value for r in UserRole]:
             errors.append("Papel inválido.")
         if not password or len(password) < 6:
             errors.append("Senha deve ter ao menos 6 caracteres.")
 
-        # Verifica email duplicado
         if email and db.session.execute(
             db.select(User).where(User.email == email)
         ).scalar_one_or_none():
@@ -103,7 +102,6 @@ def novo_usuario():
             return render_template("supervisor/form_usuario.html",
                                    pgms=pgms, modo="novo", form=request.form)
 
-        # Criação do usuário sem a coluna username
         user = User(
             name=name,
             email=email,
@@ -119,6 +117,9 @@ def novo_usuario():
         if user.role == UserRole.LIDER and pgm_id:
             db.session.add(PGMLeader(user_id=user.id, pgm_id=int(pgm_id)))
 
+        audit_log(LogAction.USUARIO_CRIADO,
+                  f"Usuário {name} ({email}) criado com papel {role}",
+                  actor=current_user, target_user=user)
         db.session.commit()
         flash(f"Usuário {name} cadastrado com sucesso!", "success")
         return redirect(url_for("supervisor.usuarios"))
@@ -144,9 +145,8 @@ def editar_usuario(user_id):
         if not name:
             errors.append("Nome completo é obrigatório.")
         if not email:
-            errors.append("O E-mail é obrigatório.")
+            errors.append("E-mail é obrigatório.")
 
-        # Verifica e-mail duplicado
         if email and db.session.execute(
             db.select(User).where(User.email == email, User.id != user_id)
         ).scalar_one_or_none():
@@ -159,7 +159,6 @@ def editar_usuario(user_id):
                                    pgms=pgms, modo="editar",
                                    user=user, form=request.form)
 
-        # Atualiza os dados principais
         user.name  = name
         user.email = email
 
@@ -177,10 +176,12 @@ def editar_usuario(user_id):
             else:
                 db.session.add(PGMLeader(user_id=user_id, pgm_id=int(pgm_id)))
 
-        # Atualiza a senha apenas se o supervisor digitou algo
         if nova_senha and len(nova_senha) >= 6:
             user.set_password(nova_senha)
 
+        audit_log(LogAction.USUARIO_EDITADO,
+                  f"Usuário {name} ({email}) editado",
+                  actor=current_user, target_user=user)
         db.session.commit()
         flash(f"Usuário {name} atualizado com sucesso!", "success")
         return redirect(url_for("supervisor.usuarios"))
@@ -202,6 +203,9 @@ def excluir_usuario(user_id):
         return redirect(url_for("supervisor.usuarios"))
 
     nome = user.name
+    audit_log(LogAction.USUARIO_EXCLUIDO,
+              f"Usuário {nome} ({user.email}) foi excluído",
+              actor=current_user)
     db.session.delete(user)
     db.session.commit()
     flash(f"Usuário {nome} removido.", "info")
@@ -286,6 +290,9 @@ def gerar_link_reset(user_id):
     from flask import request as req
     user = db.get_or_404(User, user_id)
     token = user.generate_reset_token(hours=24)
+    audit_log(LogAction.RESET_GERADO,
+              f"Link de recuperação de senha gerado para {user.name} ({user.email})",
+              actor=current_user, target_user=user)
     db.session.commit()
     link = req.host_url.rstrip("/") + f"/redefinir/{token}"
     flash(
@@ -341,12 +348,16 @@ def nova_atividade():
         flash(f'Já existe uma atividade chamada "{name}".', "warning")
         return redirect(url_for("supervisor.atividades"))
 
-    db.session.add(ActivityType(
+    new_act = ActivityType(
         name=name,
         source=ActivitySource(source),
         default_premiles=default_premiles,
         requires_summary=requires_summary,
-    ))
+    )
+    db.session.add(new_act)
+    audit_log(LogAction.ATIVIDADE_CRIADA,
+              f'Atividade "{name}" criada ({source}, {default_premiles} pts)',
+              actor=current_user)
     db.session.commit()
     flash(f'Atividade "{name}" criada com sucesso!', "success")
     return redirect(url_for("supervisor.atividades"))
@@ -373,8 +384,11 @@ def toggle_atividade(act_id):
     from app.models.activity import ActivityType
     act = db.get_or_404(ActivityType, act_id)
     act.is_active = not act.is_active
-    db.session.commit()
     estado = "ativada" if act.is_active else "desativada"
+    audit_log(LogAction.ATIVIDADE_TOGGLE,
+              f'Atividade "{act.name}" {estado}',
+              actor=current_user)
+    db.session.commit()
     flash(f'Atividade "{act.name}" {estado}.', "info")
     return redirect(url_for("supervisor.atividades"))
 
@@ -390,8 +404,8 @@ def exportar_periodo_excel(periodo_id):
     from app.models.pgm import PGM
     import io, openpyxl
     from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
-    from datetime import datetime
     from openpyxl.utils import get_column_letter
+    from datetime import datetime
 
     periodo = db.get_or_404(Period, periodo_id)
     snapshots = db.session.execute(
@@ -516,3 +530,58 @@ def exportar_periodo_pdf(periodo_id):
     nome = f"resultado_{periodo.name.replace(' ','_')}_{datetime.now().strftime('%Y%m%d')}.pdf"
     return send_file(buf, mimetype="application/pdf",
                      as_attachment=True, download_name=nome)
+
+
+# ── Painel de logs de auditoria ───────────────────────────────────────────────
+
+@supervisor_bp.route("/logs")
+@login_required
+@requires_role(UserRole.SUPERVISOR)
+def logs():
+    from app.models.audit import AuditLog, LogAction
+
+    # Filtros
+    user_id   = request.args.get("user_id", type=int)
+    action    = request.args.get("action", "")
+    page      = request.args.get("page", 1, type=int)
+    per_page  = 50
+
+    query = db.select(AuditLog).order_by(AuditLog.created_at.desc())
+
+    if user_id:
+        query = query.where(
+            db.or_(
+                AuditLog.actor_id == user_id,
+                AuditLog.target_user_id == user_id
+            )
+        )
+    if action:
+        query = query.where(AuditLog.action == action)
+
+    # Paginação manual
+    total = db.session.execute(
+        db.select(db.func.count()).select_from(query.subquery())
+    ).scalar()
+
+    logs_page = db.session.execute(
+        query.offset((page - 1) * per_page).limit(per_page)
+    ).scalars().all()
+
+    # Para o filtro de usuários
+    usuarios = db.session.execute(
+        db.select(User).order_by(User.name)
+    ).scalars().all()
+
+    total_pages = (total + per_page - 1) // per_page
+
+    return render_template(
+        "supervisor/logs.html",
+        logs=logs_page,
+        usuarios=usuarios,
+        actions=LogAction,
+        filtro_user_id=user_id,
+        filtro_action=action,
+        page=page,
+        total_pages=total_pages,
+        total=total,
+    )

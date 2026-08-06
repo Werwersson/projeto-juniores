@@ -3,6 +3,7 @@ from flask_login import login_required, current_user
 from app.blueprints.junior import junior_bp
 from app.decorators import requires_role
 from app.models.user import UserRole
+from app.models.audit import log as audit_log, LogAction
 from app.models.activity import (ActivityType, ActivitySource, ChecklistLog,
                                   ManualLog, PremilesBalance, SummaryStatus)
 from app import db
@@ -82,6 +83,9 @@ def checklist():
             else:
                 db.session.add(PremilesBalance(
                     junior_id=current_user.id, total_balance=premiles))
+            audit_log(LogAction.RESUMO_REENVIADO,
+                      f"{current_user.name} reenviou resumo de '{activity.name}'",
+                      actor=current_user)
             db.session.commit()
             flash(f"Resumo reenviado! +{premiles} Premiles creditados novamente. 🎉", "success")
             return redirect(url_for("junior.checklist"))
@@ -109,6 +113,9 @@ def checklist():
             db.session.add(PremilesBalance(
                 junior_id=current_user.id, total_balance=premiles))
 
+        audit_log(LogAction.CHECKLIST_MARCADO,
+                  f"{current_user.name} marcou '{activity.name}' (+{premiles} Premiles)",
+                  actor=current_user)
         db.session.commit()
         flash(f"+{premiles} Premiles! Continue assim! 🎉", "success")
         return redirect(url_for("junior.checklist"))

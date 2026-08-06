@@ -2,6 +2,7 @@ from flask import render_template, request, flash, redirect, url_for
 from flask_login import login_required, current_user
 from app.blueprints.lider import lider_bp
 from app.decorators import requires_role, requires_pgm_access, requires_own_profile_or_leader
+from app.models.audit import log as audit_log, LogAction
 from app.models.user import UserRole, User
 from app.models.pgm import PGM
 from app.models.activity import ActivityType, ActivitySource, ManualLog, ChecklistLog
@@ -31,7 +32,11 @@ def renomear_pgm(pgm_id: int):
     if not novo_nome:
         flash("O nome do PGM não pode estar vazio.", "warning")
         return redirect(request.referrer or url_for("lider.dashboard"))
+    nome_antigo = pgm.name
     pgm.name = novo_nome
+    audit_log(LogAction.PGM_RENOMEADO,
+              f'PGM renomeado de "{nome_antigo}" para "{novo_nome}"',
+              actor=current_user)
     db.session.commit()
     flash(f'PGM renomeado para "{novo_nome}".', "success")
     return redirect(request.referrer or url_for("lider.dashboard"))
@@ -108,6 +113,9 @@ def lancamento():
             from app.models.activity import PremilesBalance
             db.session.add(PremilesBalance(junior_id=junior_id, total_balance=premiles))
 
+        audit_log(LogAction.LANCAMENTO_MANUAL,
+                  f"{premiles} Premiles creditados para {junior.name} — {activity.name}",
+                  actor=current_user, target_user=junior)
         db.session.commit()
         flash(f"{premiles} Premiles creditados com sucesso!", "success")
         return redirect(url_for("lider.lancamento"))
@@ -171,6 +179,9 @@ def credito_retroativo(junior_id: int):
         from app.models.activity import PremilesBalance
         db.session.add(PremilesBalance(junior_id=junior_id, total_balance=premiles))
 
+    audit_log(LogAction.CREDITO_RETROATIVO,
+              f"Crédito retroativo de {premiles} Premiles para {junior.name} em {activity_date}",
+              actor=current_user, target_user=junior)
     db.session.commit()
     flash(f"Crédito retroativo de {premiles} Premiles registrado.", "success")
     return redirect(request.referrer or url_for("lider.dashboard"))
@@ -297,6 +308,9 @@ def lancamento_lote():
 
         creditados += 1
 
+    audit_log(LogAction.LANCAMENTO_LOTE,
+              f"{premiles} Premiles creditados em lote para {creditados} júnior(es) — {activity.name}",
+              actor=current_user)
     db.session.commit()
     flash(f"✅ {premiles} Premiles creditados para {creditados} júnior(es) — {activity.name}.", "success")
     return redirect(url_for("lider.lancamento"))
@@ -322,6 +336,9 @@ def excluir_lancamento(log_id: int):
     if junior and junior.balance:
         junior.balance.total_balance = max(0, junior.balance.total_balance - log.premiles_awarded)
 
+    audit_log(LogAction.LANCAMENTO_EXCLUIDO,
+              f"Lançamento excluído: {log.premiles_awarded} Premiles revertidos de {junior.name}",
+              actor=current_user, target_user=junior)
     db.session.delete(log)
     db.session.commit()
     flash(f"Lançamento excluído e {log.premiles_awarded} Premiles revertidos.", "info")
@@ -405,6 +422,9 @@ def validar_resumo(log_id: int):
         log.validated_by   = current_user.id
         log.validator_note = nota or None
         log.validated_at   = datetime.now()
+        audit_log(LogAction.RESUMO_APROVADO,
+                  f"Resumo de leitura de {junior.name} aprovado por {current_user.name}",
+                  actor=current_user, target_user=junior)
         flash(f"✅ Leitura de {junior.name} aprovada!", "success")
 
     elif acao == "rejeitar":
@@ -412,10 +432,11 @@ def validar_resumo(log_id: int):
         log.validated_by   = current_user.id
         log.validator_note = nota or "Resumo insuficiente. Por favor, reescreva com mais detalhes."
         log.validated_at   = datetime.now()
-
-        # Reverte os Premiles ao rejeitar
         if junior.balance and junior.balance.total_balance >= log.premiles_awarded:
             junior.balance.total_balance -= log.premiles_awarded
+        audit_log(LogAction.RESUMO_REJEITADO,
+                  f"Resumo de leitura de {junior.name} rejeitado por {current_user.name}",
+                  actor=current_user, target_user=junior)
         flash(f"❌ Leitura de {junior.name} rejeitada. Premiles revertidos.", "warning")
 
     else:

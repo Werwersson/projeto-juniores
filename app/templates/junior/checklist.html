@@ -161,10 +161,10 @@
             <input type="hidden" name="activity_type_id" value="{{ activity.id }}" />
             <input type="hidden" name="premiles" value="{{ activity.default_premiles or 10 }}" />
             <button type="submit"
-                    class="tk-check-item {% if is_done %}done{% endif %}"
-                    style="width:100%; text-align:left; background:none;"
-                    {% if is_done %}disabled{% endif %}
-                    data-premiles="{{ activity.default_premiles or 10 }}">
+                class="tk-check-item {% if is_done %}done{% endif %}"
+                style="width:100%; text-align:left; background:none; color: inherit;" 
+                {% if is_done %}disabled{% endif %}
+                data-premiles="{{ activity.default_premiles or 10 }}">
               <div class="tk-check-circle">
                 {% if is_done %}
                   <i class="bi bi-check-lg" style="color:#fff; font-weight:800;"></i>

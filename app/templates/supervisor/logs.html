@@ -1,0 +1,190 @@
+{% extends "base.html" %}
+{% block title %}Logs de Auditoria — TeoK!ds.{% endblock %}
+
+{% block content %}
+
+<div class="tk-topbar">
+  <div>
+    <div class="tk-page-title">Logs de auditoria</div>
+    <div class="tk-page-subtitle">
+      {{ total }} registro{{ 's' if total != 1 }} encontrado{{ 's' if total != 1 }}
+    </div>
+  </div>
+</div>
+
+{# ── Filtros ── #}
+<div class="tk-card mb-4">
+  <form method="GET" action="{{ url_for('supervisor.logs') }}"
+        style="display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end;">
+
+    <div style="flex:1; min-width:180px;">
+      <label class="tk-label">Filtrar por usuário</label>
+      <select class="tk-input" name="user_id" style="font-size:0.88rem; padding:8px 12px;">
+        <option value="">Todos os usuários</option>
+        {% for u in usuarios %}
+        <option value="{{ u.id }}" {% if filtro_user_id == u.id %}selected{% endif %}>
+          {{ u.name }} ({{ u.email or "—" }})
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div style="flex:1; min-width:180px;">
+      <label class="tk-label">Filtrar por ação</label>
+      <select class="tk-input" name="action" style="font-size:0.88rem; padding:8px 12px;">
+        <option value="">Todas as ações</option>
+        <optgroup label="Autenticação">
+          <option value="login_ok"        {% if filtro_action == 'login_ok' %}selected{% endif %}>Login bem-sucedido</option>
+          <option value="login_fail"      {% if filtro_action == 'login_fail' %}selected{% endif %}>Tentativa de login falha</option>
+          <option value="logout"          {% if filtro_action == 'logout' %}selected{% endif %}>Logout</option>
+          <option value="senha_trocada"   {% if filtro_action == 'senha_trocada' %}selected{% endif %}>Senha trocada</option>
+          <option value="senha_redefinida"{% if filtro_action == 'senha_redefinida' %}selected{% endif %}>Senha redefinida</option>
+          <option value="reset_gerado"    {% if filtro_action == 'reset_gerado' %}selected{% endif %}>Link de reset gerado</option>
+        </optgroup>
+        <optgroup label="Usuários">
+          <option value="usuario_criado"  {% if filtro_action == 'usuario_criado' %}selected{% endif %}>Usuário criado</option>
+          <option value="usuario_editado" {% if filtro_action == 'usuario_editado' %}selected{% endif %}>Usuário editado</option>
+          <option value="usuario_excluido"{% if filtro_action == 'usuario_excluido' %}selected{% endif %}>Usuário excluído</option>
+        </optgroup>
+        <optgroup label="Premiles">
+          <option value="checklist_marcado"  {% if filtro_action == 'checklist_marcado' %}selected{% endif %}>Checklist marcado</option>
+          <option value="lancamento_manual"  {% if filtro_action == 'lancamento_manual' %}selected{% endif %}>Lançamento manual</option>
+          <option value="lancamento_lote"    {% if filtro_action == 'lancamento_lote' %}selected{% endif %}>Lançamento em lote</option>
+          <option value="lancamento_excluido"{% if filtro_action == 'lancamento_excluido' %}selected{% endif %}>Lançamento excluído</option>
+          <option value="credito_retroativo" {% if filtro_action == 'credito_retroativo' %}selected{% endif %}>Crédito retroativo</option>
+        </optgroup>
+        <optgroup label="Resumos">
+          <option value="resumo_aprovado"  {% if filtro_action == 'resumo_aprovado' %}selected{% endif %}>Resumo aprovado</option>
+          <option value="resumo_rejeitado" {% if filtro_action == 'resumo_rejeitado' %}selected{% endif %}>Resumo rejeitado</option>
+          <option value="resumo_reenviado" {% if filtro_action == 'resumo_reenviado' %}selected{% endif %}>Resumo reenviado</option>
+        </optgroup>
+        <optgroup label="Períodos">
+          <option value="periodo_criado"    {% if filtro_action == 'periodo_criado' %}selected{% endif %}>Período criado</option>
+          <option value="periodo_encerrado" {% if filtro_action == 'periodo_encerrado' %}selected{% endif %}>Período encerrado</option>
+        </optgroup>
+      </select>
+    </div>
+
+    <div style="display:flex; gap:8px;">
+      <button type="submit" class="tk-btn tk-btn-purple tk-btn-sm">
+        <i class="bi bi-funnel-fill"></i> Filtrar
+      </button>
+      <a href="{{ url_for('supervisor.logs') }}" class="tk-btn tk-btn-ghost tk-btn-sm">
+        <i class="bi bi-x-lg"></i> Limpar
+      </a>
+    </div>
+
+  </form>
+</div>
+
+{# ── Tabela de logs ── #}
+<div class="tk-card">
+  {% if logs %}
+  <table class="tk-table">
+    <thead>
+      <tr>
+        <th style="width:140px;">Data/Hora</th>
+        <th style="width:44px;">Ação</th>
+        <th>Descrição</th>
+        <th style="width:130px;">Quem fez</th>
+        <th style="width:90px;">IP</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for entry in logs %}
+
+      {# Define cor e ícone por categoria de ação #}
+      {% set av = entry.action.value %}
+      {% if 'login_ok' in av or 'senha' in av or 'perfil' in av %}
+        {% set cor = 'rgba(6,182,212,0.15)' %}{% set tc = '#67e8f9' %}{% set ic = 'bi-person-check-fill' %}
+      {% elif 'login_fail' in av %}
+        {% set cor = 'rgba(239,68,68,0.15)' %}{% set tc = '#fca5a5' %}{% set ic = 'bi-shield-x' %}
+      {% elif 'excluido' in av or 'rejeitado' in av %}
+        {% set cor = 'rgba(239,68,68,0.12)' %}{% set tc = '#fca5a5' %}{% set ic = 'bi-x-circle-fill' %}
+      {% elif 'criado' in av or 'aprovado' in av %}
+        {% set cor = 'rgba(16,185,129,0.12)' %}{% set tc = '#6ee7b7' %}{% set ic = 'bi-check-circle-fill' %}
+      {% elif 'premiles' in av or 'checklist' in av or 'lancamento' in av or 'credito' in av %}
+        {% set cor = 'rgba(249,115,22,0.12)' %}{% set tc = '#fdba74' %}{% set ic = 'bi-star-fill' %}
+      {% elif 'periodo' in av %}
+        {% set cor = 'rgba(124,58,237,0.12)' %}{% set tc = '#a78bfa' %}{% set ic = 'bi-calendar2-check-fill' %}
+      {% else %}
+        {% set cor = 'rgba(107,114,128,0.1)' %}{% set tc = '#9ca3af' %}{% set ic = 'bi-info-circle-fill' %}
+      {% endif %}
+
+      <tr>
+        <td style="font-size:0.78rem; color:var(--text-muted); font-weight:600; white-space:nowrap;">
+          {{ entry.created_at.strftime('%d/%m/%y %H:%M:%S') }}
+        </td>
+        <td>
+          <div style="width:28px; height:28px; border-radius:6px; background:{{ cor }};
+                      display:flex; align-items:center; justify-content:center;">
+            <i class="bi {{ ic }}" style="color:{{ tc }}; font-size:0.8rem;"></i>
+          </div>
+        </td>
+        <td>
+          <div style="font-size:0.85rem; font-weight:600; color:var(--text);">
+            {{ entry.description }}
+          </div>
+          {% if entry.target_user_name and entry.target_user_name != entry.actor_name %}
+          <div style="font-size:0.72rem; color:var(--text-muted); font-weight:600; margin-top:2px;">
+            <i class="bi bi-arrow-right"></i> Afeta: {{ entry.target_user_name }}
+          </div>
+          {% endif %}
+        </td>
+        <td>
+          {% if entry.actor_name %}
+          <div style="display:flex; align-items:center; gap:6px;">
+            <div class="tk-avatar" style="width:22px; height:22px; font-size:0.7rem;
+                 background:linear-gradient(135deg,#7c3aed,#4a6cf7);">
+              {{ entry.actor_name[0].upper() }}
+            </div>
+            <span style="font-size:0.78rem; font-weight:700; white-space:nowrap;
+                         overflow:hidden; text-overflow:ellipsis; max-width:90px;">
+              {{ entry.actor_name }}
+            </span>
+          </div>
+          {% else %}
+          <span style="font-size:0.75rem; color:var(--text-muted);">—</span>
+          {% endif %}
+        </td>
+        <td style="font-size:0.72rem; color:var(--text-muted); font-weight:600; font-family:monospace;">
+          {{ entry.ip_address or '—' }}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  {# Paginação #}
+  {% if total_pages > 1 %}
+  <div style="display:flex; align-items:center; justify-content:space-between;
+              margin-top:20px; padding-top:16px; border-top:1px solid var(--border);">
+    <div style="font-size:0.8rem; color:var(--text-muted); font-weight:600;">
+      Página {{ page }} de {{ total_pages }} · {{ total }} registros
+    </div>
+    <div style="display:flex; gap:6px;">
+      {% if page > 1 %}
+      <a href="{{ url_for('supervisor.logs', page=page-1, user_id=filtro_user_id or '', action=filtro_action) }}"
+         class="tk-btn tk-btn-ghost tk-btn-sm">
+        <i class="bi bi-chevron-left"></i> Anterior
+      </a>
+      {% endif %}
+      {% if page < total_pages %}
+      <a href="{{ url_for('supervisor.logs', page=page+1, user_id=filtro_user_id or '', action=filtro_action) }}"
+         class="tk-btn tk-btn-ghost tk-btn-sm">
+        Próxima <i class="bi bi-chevron-right"></i>
+      </a>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+  {% else %}
+  <div style="text-align:center; padding:48px; color:var(--text-muted); font-weight:600;">
+    <i class="bi bi-journal-x" style="font-size:2rem; display:block; margin-bottom:12px;"></i>
+    Nenhum registro encontrado com os filtros aplicados.
+  </div>
+  {% endif %}
+</div>
+
+{% endblock %}

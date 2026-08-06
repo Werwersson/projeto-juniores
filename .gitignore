@@ -1,14 +1,26 @@
-# Ambientes virtuais
-venv/
-env/
-.venv/
-
-# Cache do Python
+# Ambiente
+.env
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
 
-# Variáveis de ambiente
-.env
+# Migrations geradas localmente
+migrations/
 
-# Pastas do VS Code
+# Editores
 .vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

@@ -2,19 +2,49 @@ from flask import render_template, redirect, url_for, flash, request, session
 from flask_login import login_user, logout_user, login_required, current_user
 from app.blueprints.auth import auth_bp
 from app.models.user import User, UserRole
-from app.extensions import db  # Atualizado para evitar importação circular
+from app.models.audit import log as audit_log, LogAction
+from app import db
+import time
 
 SENHA_PADRAO = "juniores2025"
 
+_login_attempts: dict = {}
+MAX_ATTEMPTS  = 5
+BLOCK_SECONDS = 300
 
-def _dashboard_url():
-    # Extrai o texto puro do cargo para evitar conflitos
-    user_role = current_user.role.value if hasattr(current_user.role, 'value') else current_user.role
-    user_role = str(user_role).upper() # Garante que está em maiúsculo
-    
-    if user_role == "SUPERVISOR":
+
+def _get_ip() -> str:
+    return request.headers.get("X-Forwarded-For", request.remote_addr or "").split(",")[0].strip()
+
+def _is_blocked(ip: str) -> bool:
+    data = _login_attempts.get(ip)
+    if not data:
+        return False
+    if data.get("blocked_until", 0) > time.time():
+        return True
+    _login_attempts.pop(ip, None)
+    return False
+
+def _register_failure(ip: str):
+    data = _login_attempts.setdefault(ip, {"attempts": 0})
+    data["attempts"] = data.get("attempts", 0) + 1
+    if data["attempts"] >= MAX_ATTEMPTS:
+        data["blocked_until"] = time.time() + BLOCK_SECONDS
+        data["attempts"] = 0
+
+def _register_success(ip: str):
+    _login_attempts.pop(ip, None)
+
+def _remaining_block(ip: str) -> int:
+    return max(0, int(_login_attempts.get(ip, {}).get("blocked_until", 0) - time.time()))
+
+def _dashboard_url() -> str:
+    """Retorna a URL do dashboard correto, robusto a String e Enum no role."""
+    role = current_user.role
+    role_str = role.value if hasattr(role, "value") else str(role).lower()
+    if "supervisor" in role_str:
         return url_for("supervisor.dashboard")
-    if user_role == "LIDER":
+    if "lider" in role_str:
         return url_for("lider.dashboard")
     return url_for("junior.dashboard")
 
@@ -31,36 +61,62 @@ def login():
     if current_user.is_authenticated:
         return redirect(_dashboard_url())
 
+    ip = _get_ip()
+
     if request.method == "POST":
-        # Recebe o e-mail em vez do username
-        email = request.form.get("email", "").strip().lower()
+        if _is_blocked(ip):
+            mins = _remaining_block(ip) // 60 + 1
+            flash(f"Muitas tentativas. Tente novamente em {mins} minuto(s).", "danger")
+            return render_template("auth/login.html", bloqueado=True)
+
+        email    = request.form.get("email", "").strip().lower()
         password = request.form.get("password", "")
         remember = bool(request.form.get("remember"))
 
-        # Busca no banco filtrando pela coluna email
         user = db.session.execute(
             db.select(User).where(User.email == email)
         ).scalar_one_or_none()
 
         if user and user.check_password(password):
+            _register_success(ip)
             login_user(user, remember=remember)
+            audit_log(LogAction.LOGIN_OK,
+                      f"{user.name} ({user.email}) fez login",
+                      actor=user, ip=ip)
+            db.session.commit()
+
             if password == SENHA_PADRAO:
                 session["force_password_change"] = True
                 flash("Por segurança, defina uma nova senha antes de continuar.", "warning")
                 return redirect(url_for("auth.trocar_senha"))
+
             next_page = request.args.get("next")
             if next_page and next_page.startswith("/"):
                 return redirect(next_page)
             return redirect(_dashboard_url())
 
-        flash("E-mail ou senha incorretos.", "danger")
+        _register_failure(ip)
+        audit_log(LogAction.LOGIN_FAIL,
+                  f"Tentativa de login falhou para '{email}'",
+                  actor=None, ip=ip)
+        db.session.commit()
 
-    return render_template("auth/login.html")
+        data      = _login_attempts.get(ip, {})
+        restantes = max(0, MAX_ATTEMPTS - data.get("attempts", 0))
+        if restantes == 0:
+            flash(f"Bloqueado por {BLOCK_SECONDS // 60} minutos.", "danger")
+        else:
+            flash(f"E-mail ou senha incorretos. {restantes} tentativa(s) restante(s).", "danger")
+
+    return render_template("auth/login.html", bloqueado=_is_blocked(ip))
 
 
 @auth_bp.route("/logout")
 @login_required
 def logout():
+    audit_log(LogAction.LOGOUT, f"{current_user.name} saiu do sistema",
+              actor=current_user)
+    db.session.commit()
     logout_user()
     flash("Até logo!", "info")
     return redirect(url_for("auth.login"))
@@ -90,6 +146,9 @@ def trocar_senha():
             return render_template("auth/trocar_senha.html", force=force)
 
         current_user.set_password(nova_senha)
+        audit_log(LogAction.SENHA_TROCADA,
+                  f"{current_user.name} alterou a própria senha",
+                  actor=current_user)
         db.session.commit()
         session.pop("force_password_change", None)
         flash("Senha alterada com sucesso! 🎉", "success")
@@ -98,11 +157,8 @@ def trocar_senha():
     return render_template("auth/trocar_senha.html", force=force)
 
 
-# ── Recuperação de senha via token ────────────────────────────────────────────
-
 @auth_bp.route("/redefinir/<token>", methods=["GET", "POST"])
 def redefinir_senha(token: str):
-    """Rota pública — acessada via link gerado pelo supervisor."""
     user = db.session.execute(
         db.select(User).where(User.reset_token == token)
     ).scalar_one_or_none()
@@ -127,23 +183,23 @@ def redefinir_senha(token: str):
 
         user.set_password(nova_senha)
         user.clear_reset_token()
+        audit_log(LogAction.SENHA_REDEFINIDA,
+                  f"Senha de {user.name} redefinida via link de recuperação",
+                  actor=user, ip=_get_ip())
         db.session.commit()
-
         login_user(user)
-        flash(f"Senha redefinida com sucesso! Bem-vindo(a), {user.name}! 🎉", "success")
+        flash(f"Senha redefinida! Bem-vindo(a), {user.name}! 🎉", "success")
         return redirect(_dashboard_url())
 
     return render_template("auth/redefinir_senha.html", token=token, user=user)
 
 
-# ── Perfil próprio ────────────────────────────────────────────────────────────
-
 @auth_bp.route("/perfil", methods=["GET", "POST"])
 @login_required
 def perfil():
     if request.method == "POST":
-        name     = request.form.get("name", "").strip()
-        email    = request.form.get("email", "").strip().lower() or None
+        name  = request.form.get("name", "").strip()
+        email = request.form.get("email", "").strip().lower()
 
         errors = []
         if not name:
@@ -151,20 +207,22 @@ def perfil():
         if not email:
             errors.append("E-mail é obrigatório.")
 
-        if email:
-            conflito_email = db.session.execute(
-                db.select(User).where(User.email == email, User.id != current_user.id)
-            ).scalar_one_or_none()
-            if conflito_email:
-                errors.append("Este e-mail já está cadastrado para outro usuário.")
+        if email and db.session.execute(
+            db.select(User).where(User.email == email, User.id != current_user.id)
+        ).scalar_one_or_none():
+            errors.append("Este e-mail já está cadastrado para outro usuário.")
 
         if errors:
             for e in errors:
                 flash(e, "danger")
             return render_template("auth/perfil.html")
 
+        old_email = current_user.email
         current_user.name  = name
         current_user.email = email
+        audit_log(LogAction.PERFIL_EDITADO,
+                  f"{name} editou o próprio perfil (email: {old_email} → {email})",
+                  actor=current_user)
         db.session.commit()
         flash("Perfil atualizado com sucesso!", "success")
         return redirect(url_for("auth.perfil"))

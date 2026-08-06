@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Requisição inválida — TeoK!ds.{% endblock %}
+{% block content %}
+<div style="min-height:70vh; display:flex; align-items:center; justify-content:center;">
+  <div style="text-align:center; max-width:380px;">
+    <div style="font-size:5rem; margin-bottom:16px;">⚠️</div>
+    <div style="font-size:4rem; font-weight:900; letter-spacing:-2px;
+                background:linear-gradient(135deg,#fbbf24,#f97316);
+                -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+                background-clip:text; line-height:1; margin-bottom:12px;">400</div>
+    <div style="font-size:1.1rem; font-weight:800; color:#fff; margin-bottom:8px;">
+      Requisição inválida
+    </div>
+    <div style="font-size:0.88rem; color:var(--text-muted); font-weight:600;
+                line-height:1.6; margin-bottom:24px;">
+      Os dados enviados são inválidos. Verifique o formulário e tente novamente.
+    </div>
+    <a href="javascript:history.back()" class="tk-btn tk-btn-purple">
+      <i class="bi bi-arrow-left"></i> Voltar
+    </a>
+  </div>
+</div>
+{% endblock %}

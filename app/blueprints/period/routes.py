@@ -3,6 +3,7 @@ from flask_login import login_required, current_user
 from app.blueprints.period import period_bp
 from app.decorators import requires_role
 from app.models.user import UserRole
+from app.models.audit import log as audit_log, LogAction
 from app.services.period_service import (
     get_active_period, criar_periodo, encerrar_periodo,
     get_historico, get_ranking_periodo
@@ -55,6 +56,10 @@ def novo():
             end_date=end_date,
             created_by_id=current_user.id,
         )
+        audit_log(LogAction.PERIODO_CRIADO,
+                  f'Período "{periodo.name}" iniciado ({start_date})',
+                  actor=current_user)
+        from app import db; db.session.commit()
         flash(f'Período "{periodo.name}" iniciado com sucesso! ✅', "success")
     except ValueError as e:
         flash(str(e), "danger")
@@ -68,6 +73,10 @@ def novo():
 def encerrar(periodo_id):
     try:
         resultado = encerrar_periodo(periodo_id)
+        audit_log(LogAction.PERIODO_ENCERRADO,
+                  f'Período "{resultado["periodo"]}" encerrado com {resultado["snapshots"]} juniores',
+                  actor=current_user)
+        from app import db; db.session.commit()
         flash(
             f'Período "{resultado["periodo"]}" encerrado! '
             f'{resultado["snapshots"]} saldos arquivados e zerados. '
