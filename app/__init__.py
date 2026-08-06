@@ -12,6 +12,9 @@ def create_app(config_name="production"):
     
     # 1. Configura a chave secreta
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'chave-super-secreta')
+
+    # 2. Configura a URL do banco de dados (Pegando APENAS do Supabase agora)
+    db_url = os.environ.get('DATABASE_URL') or 'sqlite:///banco_local.db'
         
     # Corrige a URL do Postgres se necessário (exigência do SQLAlchemy atual)
     if db_url.startswith("postgres://"):
