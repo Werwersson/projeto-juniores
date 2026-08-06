@@ -1,10 +1,12 @@
 import os
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
+from flask_login import LoginManager
 
+# Instanciando o banco de dados e o gerenciador de login
 db = SQLAlchemy()
+login_manager = LoginManager()
 
-# Adicionamos o 'config_name' aqui para bater com o seu run.py
 def create_app(config_name="production"):
     app = Flask(__name__)
     
@@ -21,11 +23,17 @@ def create_app(config_name="production"):
     app.config['SQLALCHEMY_DATABASE_URI'] = db_url
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     
-    # 3. Inicializa o SQLAlchemy com o App
+    # 3. Inicializa as extensões com o App
     db.init_app(app)
+    login_manager.init_app(app)
+    
+    # Configurações do Flask-Login
+    login_manager.login_view = 'auth.login'
+    login_manager.login_message = "Por favor, faça login para acessar esta página."
+    login_manager.login_message_category = "info"
 
     with app.app_context():
-        # Importando os blueprints diretamente das pastas dos módulos
+        # Importando os blueprints
         from .blueprints.auth import auth_bp
         from .blueprints.junior import junior_bp
         from .blueprints.lider import lider_bp
