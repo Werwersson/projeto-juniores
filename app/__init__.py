@@ -25,15 +25,18 @@ def create_app(config_name="production"):
     db.init_app(app)
 
     with app.app_context():
-        with app.app_context():
-            # Exemplo: importando os arquivos onde estão suas rotas
-            from .routes import auth, junior, lider, supervisor
-            
-            # Registrando no app
-            app.register_blueprint(auth.bp)
-            app.register_blueprint(junior.bp)
-            app.register_blueprint(lider.bp)
-            app.register_blueprint(supervisor.bp)
-        pass 
+        # Importando os blueprints diretamente das pastas dos módulos
+        from .blueprints.auth import auth_bp
+        from .blueprints.junior import junior_bp
+        from .blueprints.lider import lider_bp
+        from .blueprints.supervisor import supervisor_bp
+        from .blueprints.period import period_bp
+        
+        # Registrando no app
+        app.register_blueprint(auth_bp)
+        app.register_blueprint(junior_bp)
+        app.register_blueprint(lider_bp)
+        app.register_blueprint(supervisor_bp)
+        app.register_blueprint(period_bp)
         
     return app
