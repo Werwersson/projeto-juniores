@@ -25,15 +25,15 @@ def create_app(config_name="production"):
     db.init_app(app)
 
     with app.app_context():
-        # IMPORTANTE: Coloque aqui as importações das suas rotas (Blueprints) e modelos!
-        # Sem isso, o seu app vai abrir, mas vai dar erro 404 de "Página não encontrada".
-        # 
-        # Exemplo:
-        # from . import models
-        # from .routes.auth import auth_bp
-        # from .routes.junior import junior_bp
-        # app.register_blueprint(auth_bp)
-        # app.register_blueprint(junior_bp)
+        with app.app_context():
+            # Exemplo: importando os arquivos onde estão suas rotas
+            from .routes import auth, junior, lider, supervisor
+            
+            # Registrando no app
+            app.register_blueprint(auth.bp)
+            app.register_blueprint(junior.bp)
+            app.register_blueprint(lider.bp)
+            app.register_blueprint(supervisor.bp)
         pass 
         
     return app
