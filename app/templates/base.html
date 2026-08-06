@@ -27,6 +27,26 @@
   <!-- Custom -->
   <link rel="stylesheet" href="{{ url_for('static', filename='css/custom.css') }}" />
 
+  <!-- Correção: garante que o menu lateral role internamente e o
+       rodapé (usuário + trocar senha + sair) fique sempre visível,
+       mesmo com muitos itens de navegação -->
+  <style>
+    .tk-sidebar {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+    .tk-nav {
+      flex: 1 1 auto;
+      overflow-y: auto;
+      min-height: 0;
+    }
+    .tk-sidebar-footer {
+      flex: 0 0 auto;
+    }
+  </style>
+
   {% block head %}{% endblock %}
 </head>
 <body>
@@ -99,11 +119,6 @@
          class="tk-nav-item {% if request.endpoint == 'supervisor.relatorios' %}active{% endif %}">
         <span class="tk-nav-icon"><i class="bi bi-file-earmark-bar-graph-fill"></i></span>
         Relatórios
-      </a>
-      <a href="{{ url_for('period.index') }}"
-         class="tk-nav-item {% if 'period' in (request.endpoint or '') %}active{% endif %}">
-        <span class="tk-nav-icon"><i class="bi bi-calendar2-check-fill"></i></span>
-        Períodos
       </a>
 
     {% elif current_user.is_lider %}
