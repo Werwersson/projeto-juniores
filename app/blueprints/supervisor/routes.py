@@ -5,6 +5,7 @@ from app.decorators import requires_role
 from app.models.user import UserRole, User
 from app.models.pgm import PGM, PGMLeader
 from app.models.activity import PremilesBalance
+from app.models.audit import log as audit_log, LogAction
 from app import db
 
 
