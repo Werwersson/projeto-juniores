@@ -96,6 +96,8 @@ def lancamento():
             flash("Acesso negado a este júnior.", "danger")
             return redirect(url_for("lider.lancamento"))
 
+        activity = db.get_or_404(ActivityType, activity_type_id)
+
         log = ManualLog(
             junior_id=junior_id,
             activity_type_id=activity_type_id,
