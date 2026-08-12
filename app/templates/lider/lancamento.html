@@ -18,11 +18,12 @@
             border:1px solid var(--border); border-radius:var(--radius-sm);
             padding:4px; width:fit-content;">
   <button id="tab-individual" onclick="switchTab('individual')"
-          class="tk-btn tk-btn-purple tk-btn-sm" style="min-width:130px; justify-content:center;">
+          class="tk-btn tk-btn-ghost tk-btn-sm" style="min-width:130px; justify-content:center;">
     <i class="bi bi-person-fill"></i> Individual
   </button>
   <button id="tab-lote" onclick="switchTab('lote')"
-          class="tk-btn tk-btn-ghost tk-btn-sm" style="min-width:130px; justify-content:center;">
+          class="tk-btn tk-btn-sm" style="min-width:130px; justify-content:center;
+                 background:linear-gradient(135deg,#00cfff,#0077ff); color:#000; font-weight:800;">
     <i class="bi bi-people-fill"></i> Em lote
   </button>
 </div>
@@ -30,7 +31,7 @@
 <div class="row g-4">
 
   {# ── PAINEL INDIVIDUAL ── #}
-  <div id="painel-individual" class="col-12 col-lg-7">
+  <div id="painel-individual" class="col-12 col-lg-7" style="display:none;">
     <div class="tk-card tk-card-glow-purple">
       <div class="card-title" style="font-size:0.72rem; font-weight:800; letter-spacing:1px;
                                       text-transform:uppercase; color:var(--text-muted); margin-bottom:20px;">
@@ -87,7 +88,7 @@
   </div>
 
   {# ── PAINEL EM LOTE ── #}
-  <div id="painel-lote" class="col-12 col-lg-7" style="display:none;">
+  <div id="painel-lote" class="col-12 col-lg-7">
     <div class="tk-card tk-card-glow-cyan">
       <div style="font-size:0.72rem; font-weight:800; letter-spacing:1px;
                   text-transform:uppercase; color:var(--text-muted); margin-bottom:20px;">
