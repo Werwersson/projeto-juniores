@@ -27,55 +27,16 @@
   <!-- Custom -->
   <link rel="stylesheet" href="{{ url_for('static', filename='css/custom.css') }}" />
 
-  <!-- Correção: garante que o menu lateral role internamente e o
-       rodapé (usuário + trocar senha + sair) fique sempre visível,
-       mesmo com muitos itens de navegação -->
-  <style>
-    .tk-sidebar {
-      display: flex;
-      flex-direction: column;
-      height: 100vh;
-      overflow: hidden;
-    }
-    .tk-nav {
-      flex: 1 1 auto;
-      overflow-y: auto;
-      min-height: 0;
-    }
-    .tk-sidebar-footer {
-      flex: 0 0 auto;
-    }
-    /* Evita que o nome do usuário empurre os ícones de
-       "trocar senha" / "sair" para fora da sidebar */
-    .tk-user-pill {
-      display: flex;
-      align-items: center;
-      width: 100%;
-      max-width: 100%;
-      box-sizing: border-box;
-    }
-    .tk-user-info {
-      flex: 1 1 auto;
-      min-width: 0;
-    }
-    .tk-user-name,
-    .tk-user-role {
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-    .tk-user-pill > div:last-child {
-      flex: 0 0 auto;
-    }
-  </style>
-
   {% block head %}{% endblock %}
 </head>
 <body>
 
 {# ── Sidebar (só aparece quando autenticado) ─────────── #}
 {% if current_user.is_authenticated %}
-<aside class="tk-sidebar">
+{# Overlay mobile — fecha sidebar ao clicar fora #}
+<div class="tk-sidebar-overlay" id="tk-overlay" onclick="closeSidebar()"></div>
+
+<aside class="tk-sidebar" id="tk-sidebar">
 
   {# Logo #}
   <div class="tk-logo">
@@ -141,6 +102,11 @@
          class="tk-nav-item {% if request.endpoint == 'supervisor.relatorios' %}active{% endif %}">
         <span class="tk-nav-icon"><i class="bi bi-file-earmark-bar-graph-fill"></i></span>
         Relatórios
+      </a>
+      <a href="{{ url_for('period.index') }}"
+         class="tk-nav-item {% if 'period' in (request.endpoint or '') %}active{% endif %}">
+        <span class="tk-nav-icon"><i class="bi bi-calendar2-check-fill"></i></span>
+        Períodos
       </a>
 
     {% elif current_user.is_lider %}
@@ -222,6 +188,17 @@
 </aside>
 {% endif %}
 
+{# ── Topbar mobile (hamburguer) ─────────────────────────── #}
+{% if current_user.is_authenticated %}
+<div class="tk-mobile-topbar">
+  <button class="tk-hamburger" onclick="openSidebar()" aria-label="Menu">
+    <i class="bi bi-list" id="hamburger-icon"></i>
+  </button>
+  <div class="tk-mobile-logo">TeoK!ds.</div>
+  <div style="width:38px;"></div>{# espaço para centralizar o logo #}
+</div>
+{% endif %}
+
 {# ── Conteúdo principal ──────────────────────────────── #}
 <main class="{% if current_user.is_authenticated %}tk-main{% endif %}">
 
@@ -245,80 +222,43 @@
   {% block content %}{% endblock %}
 </main>
 
-{# ── Bottom navigation (mobile) ──────────────────────── #}
-{% if current_user.is_authenticated %}
-<nav class="tk-bottom-nav">
 
-  {% if current_user.is_supervisor %}
-    <a href="{{ url_for('supervisor.dashboard') }}"
-       class="tk-bottom-nav-item {% if request.endpoint == 'supervisor.dashboard' %}active{% endif %}">
-      <i class="bi bi-grid-fill"></i>Início
-    </a>
-    <a href="{{ url_for('lider.lancamento') }}"
-       class="tk-bottom-nav-item {% if request.endpoint == 'lider.lancamento' %}active{% endif %}">
-      <i class="bi bi-plus-circle-fill"></i>Lançar
-    </a>
-    <a href="{{ url_for('supervisor.ranking') }}"
-       class="tk-bottom-nav-item {% if 'ranking' in (request.endpoint or '') %}active{% endif %}">
-      <i class="bi bi-trophy-fill"></i>Ranking
-    </a>
-    <a href="{{ url_for('supervisor.relatorios') }}"
-       class="tk-bottom-nav-item {% if request.endpoint == 'supervisor.relatorios' %}active{% endif %}">
-      <i class="bi bi-file-earmark-bar-graph-fill"></i>Relatório
-    </a>
-    <a href="{{ url_for('period.index') }}"
-       class="tk-bottom-nav-item {% if 'period' in (request.endpoint or '') %}active{% endif %}">
-      <i class="bi bi-calendar2-check-fill"></i>Períodos
-    </a>
 
-  {% elif current_user.is_lider %}
-    <a href="{{ url_for('lider.dashboard') }}"
-       class="tk-bottom-nav-item {% if request.endpoint == 'lider.dashboard' %}active{% endif %}">
-      <i class="bi bi-grid-fill"></i>Início
-    </a>
-    <a href="{{ url_for('lider.lancamento') }}"
-       class="tk-bottom-nav-item {% if request.endpoint == 'lider.lancamento' %}active{% endif %}">
-      <i class="bi bi-plus-circle-fill"></i>Lançar
-    </a>
-    <a href="{{ url_for('lider.ranking') }}"
-       class="tk-bottom-nav-item {% if request.endpoint == 'lider.ranking' %}active{% endif %}">
-      <i class="bi bi-trophy-fill"></i>Ranking
-    </a>
-    <a href="{{ url_for('lider.resumos') }}"
-       class="tk-bottom-nav-item {% if request.endpoint == 'lider.resumos' %}active{% endif %}">
-      <i class="bi bi-journal-text"></i>Resumos
-    </a>
-    <a href="{{ url_for('lider.historico') }}"
-       class="tk-bottom-nav-item {% if request.endpoint == 'lider.historico' %}active{% endif %}">
-      <i class="bi bi-clock-history"></i>Histórico
-    </a>
-
-  {% elif current_user.is_junior %}
-    <a href="{{ url_for('junior.dashboard') }}"
-       class="tk-bottom-nav-item {% if request.endpoint == 'junior.dashboard' %}active{% endif %}">
-      <i class="bi bi-house-fill"></i>Início
-    </a>
-    <a href="{{ url_for('junior.checklist') }}"
-       class="tk-bottom-nav-item {% if request.endpoint == 'junior.checklist' %}active{% endif %}">
-      <i class="bi bi-check2-circle"></i>Checklist
-    </a>
-    <a href="{{ url_for('junior.extrato') }}"
-       class="tk-bottom-nav-item {% if request.endpoint == 'junior.extrato' %}active{% endif %}">
-      <i class="bi bi-receipt"></i>Extrato
-    </a>
-    <a href="{{ url_for('auth.trocar_senha') }}"
-       class="tk-bottom-nav-item {% if request.endpoint == 'auth.trocar_senha' %}active{% endif %}">
-      <i class="bi bi-key-fill"></i>Senha
-    </a>
-    <a href="{{ url_for('auth.logout') }}" class="tk-bottom-nav-item">
-      <i class="bi bi-box-arrow-right"></i>Sair
-    </a>
-  {% endif %}
-
-</nav>
-{% endif %}
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 {% block scripts %}{% endblock %}
+
+<script>
+/* ── Sidebar retrátil mobile ─────────────────────────── */
+var sidebar  = document.getElementById('tk-sidebar');
+var overlay  = document.getElementById('tk-overlay');
+
+function openSidebar() {
+  if (!sidebar) return;
+  sidebar.classList.add('open');
+  if (overlay) overlay.classList.add('open');
+  document.body.classList.add('sidebar-open');
+}
+
+function closeSidebar() {
+  if (!sidebar) return;
+  sidebar.classList.remove('open');
+  if (overlay) overlay.classList.remove('open');
+  document.body.classList.remove('sidebar-open');
+}
+
+// Fecha com tecla ESC
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeSidebar();
+});
+
+// Fecha ao navegar (links dentro da sidebar)
+if (sidebar) {
+  sidebar.querySelectorAll('a').forEach(function(link) {
+    link.addEventListener('click', function() {
+      // Pequeno delay para o link processar antes de fechar
+      setTimeout(closeSidebar, 100);
+    });
+  });
+}
+</script>
 </body>
 </html>

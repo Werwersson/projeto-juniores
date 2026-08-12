@@ -535,73 +535,95 @@ body {
 /* ── Mobile ──────────────────────────────────────────── */
 @media (max-width: 768px) {
 
-  /* Esconde sidebar desktop */
-  .tk-sidebar { display: none; }
-
-  /* Conteúdo ocupa tudo, com espaço para a bottom-bar */
-  .tk-main {
-    margin-left: 0;
-    padding: 20px 16px 96px; /* 96px = altura da bottom bar + folga */
+  /* Sidebar: escondida por padrão, desliza da esquerda quando aberta */
+  .tk-sidebar {
+    transform: translateX(-100%);
+    transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 300;
+    box-shadow: none;
   }
 
-  /* ── Bottom navigation bar ── */
-  .tk-bottom-nav {
-    display: flex;
-    position: fixed;
-    bottom: 0; left: 0; right: 0;
-    background: var(--bg-card);
-    border-top: 1px solid var(--border);
-    z-index: 200;
-    padding: 0 8px;
-    padding-bottom: env(safe-area-inset-bottom); /* suporte a iPhone com notch */
+  .tk-sidebar.open {
+    transform: translateX(0);
+    box-shadow: 4px 0 32px rgba(0,0,0,0.6);
   }
 
-  .tk-bottom-nav-item {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 3px;
-    padding: 10px 4px;
-    color: var(--text-muted);
-    text-decoration: none;
-    font-size: 0.62rem;
-    font-weight: 800;
-    letter-spacing: 0.3px;
-    transition: color 0.18s;
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  .tk-bottom-nav-item i {
-    font-size: 1.25rem;
+  /* Overlay escuro atrás da sidebar */
+  .tk-sidebar-overlay {
     display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0);
+    z-index: 299;
+    pointer-events: none;
+    transition: background 0.28s ease;
   }
 
-  .tk-bottom-nav-item.active {
-    color: #a78bfa;
+  .tk-sidebar-overlay.open {
+    background: rgba(0,0,0,0.65);
+    pointer-events: all;
   }
 
-  .tk-bottom-nav-item.active i {
-    background: var(--grad-purple);
+  /* Topbar mobile com botão hamburguer */
+  .tk-mobile-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 56px;
+    background: var(--bg-card);
+    border-bottom: 1px solid var(--border);
+    padding: 0 16px;
+    z-index: 200;
+  }
+
+  .tk-mobile-logo {
+    font-size: 1.2rem;
+    font-weight: 900;
+    background: var(--grad-hero);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
 
-  /* Ajustes de layout para mobile */
-  .tk-topbar { flex-direction: column; align-items: flex-start; gap: 10px; }
-  .stats, .row.g-3 { gap: 8px !important; }
-  .tk-page-title { font-size: 1.3rem; }
-  .pgm-cards { grid-template-columns: 1fr !important; }
+  .tk-hamburger {
+    width: 38px; height: 38px;
+    border-radius: var(--radius-sm);
+    background: var(--bg-card2);
+    border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    color: var(--text);
+    font-size: 1.1rem;
+    -webkit-tap-highlight-color: transparent;
+    transition: background 0.18s;
+  }
 
-  /* Pódio empilha em mobile */
+  .tk-hamburger:active { background: var(--border); }
+
+  /* Conteúdo principal — espaço para a topbar fixa */
+  .tk-main {
+    margin-left: 0;
+    padding: 76px 16px 24px; /* 56px topbar + 20px gap */
+  }
+
+  /* Ajustes de layout */
+  .tk-topbar { flex-direction: column; align-items: flex-start; gap: 10px; }
+  .tk-page-title { font-size: 1.25rem; }
+  .pgm-cards { grid-template-columns: 1fr !important; }
   div[style*="grid-template-columns:1fr 1fr 1fr"] {
     grid-template-columns: 1fr !important;
   }
+
+  /* Impede scroll do body quando sidebar está aberta */
+  body.sidebar-open { overflow: hidden; }
 }
 
-/* Esconde bottom-nav em desktop */
+/* Desktop: esconde elementos exclusivos do mobile */
 @media (min-width: 769px) {
-  .tk-bottom-nav { display: none; }
+  .tk-bottom-nav        { display: none; }
+  .tk-mobile-topbar     { display: none; }
+  .tk-sidebar-overlay   { display: none; }
+  .tk-hamburger         { display: none; }
 }
