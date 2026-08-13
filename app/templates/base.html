@@ -36,18 +36,18 @@
 {# Overlay mobile — fecha sidebar ao clicar fora #}
 <div class="tk-sidebar-overlay" id="tk-overlay" onclick="closeSidebar()"></div>
 
-<aside class="tk-sidebar" id="tk-sidebar">
+<aside class="tk-sidebar" id="tk-sidebar" style="display: flex; flex-direction: column; height: 100dvh; overflow: hidden;">
 
   {# Logo #}
-  <div class="tk-logo">
+  <div class="tk-logo" style="flex: 0 0 auto;">
     <div class="tk-logo-text">TeoK<span>!</span>ds<span>.</span></div>
     <div style="font-size:0.7rem; color:var(--text-muted); font-weight:700; letter-spacing:1px; margin-top:4px;">
       PROJETO JUNIORES
     </div>
   </div>
 
-  {# Navegação #}
-  <nav class="tk-nav">
+  {# Navegação com rolagem própria #}
+  <nav class="tk-nav" style="flex: 1 1 auto; overflow-y: auto; min-height: 0; padding-bottom: 1rem;">
 
     {% if current_user.is_supervisor %}
       <a href="{{ url_for('supervisor.dashboard') }}"
@@ -151,8 +151,8 @@
 
   </nav>
 
-  {# User pill #}
-  <div class="tk-sidebar-footer">
+  {# User pill - Fixo no rodapé #}
+  <div class="tk-sidebar-footer" style="flex: 0 0 auto; margin-top: auto; border-top: 1px solid var(--border);">
 
     {# Info do usuário #}
     <a href="{{ url_for('auth.perfil') }}" class="tk-user-pill" style="text-decoration:none;">
@@ -172,8 +172,9 @@
     </a>
 
     {# Ações — linha separada, sempre visível #}
-    <div style="display:flex; gap:4px; margin-top:8px; padding-top:8px;
-                border-top:1px solid var(--border);">
+    <div style="display:flex; gap:4px; margin-top:8px; padding-top:8px;">
+      
+      {# Botão Trocar Senha com Ícone de Chave #}
       <a href="{{ url_for('auth.trocar_senha') }}"
          class="tk-btn tk-btn-ghost tk-btn-sm"
          style="flex:1; justify-content:center; gap:6px; font-size:0.8rem;"
@@ -181,15 +182,18 @@
         <i class="bi bi-key-fill"></i>
         <span>Trocar senha</span>
       </a>
+      
+      {# Botão Sair com Ícone de Porta Vermelha #}
       <a href="{{ url_for('auth.logout') }}"
          class="tk-btn tk-btn-sm"
          style="flex:1; justify-content:center; gap:6px; font-size:0.8rem;
-                background:rgba(239,68,68,0.1); color:#fca5a5;
+                background:rgba(239,68,68,0.1); color:#ef4444;
                 border:1px solid rgba(239,68,68,0.2);"
          title="Sair">
-        <i class="bi bi-box-arrow-right"></i>
+        <i class="bi bi-door-open-fill" style="color: #ef4444; font-size: 1.1rem;"></i>
         <span>Sair</span>
       </a>
+      
     </div>
 
   </div>
