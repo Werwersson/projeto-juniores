@@ -6,6 +6,7 @@ from app.decorators import requires_role
 from app.models.user import UserRole, User
 from app.models.pgm import PGM, PGMLeader
 from app.models.activity import PremilesBalance
+from app.models.audit import AuditLog, LogAction
 from app import db
 
 
@@ -539,8 +540,8 @@ def exportar_periodo_pdf(periodo_id):
 @login_required
 @requires_role(UserRole.SUPERVISOR)
 def logs():
-    from app.models.audit import AuditLog, LogAction
-
+    # Removido: from app.models.audit import AuditLog, LogAction (agora no topo)
+    
     # Filtros
     user_id   = request.args.get("user_id", type=int)
     action    = request.args.get("action", "")
