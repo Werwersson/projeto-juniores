@@ -126,7 +126,7 @@
 <div class="tk-alert tk-alert-warning mb-3">
   <i class="bi bi-exclamation-triangle-fill"></i>
   Nenhum período ativo.
-  <a href="{{ url_for('period.index') }}" style="color:#fbbf24; font-weight:800; margin-left:4px;">
+  <a href="{{ url_for('periodo.index') }}" style="color:#fbbf24; font-weight:800; margin-left:4px;">
     Criar período →
   </a>
 </div>
@@ -219,4 +219,103 @@
   {% endfor %}
 </div>
 
+
+{# ── Zerar Premiles ── #}
+<div class="tk-card mt-4" style="border-color:rgba(239,68,68,0.25);">
+  <div style="display:flex; align-items:flex-start; gap:16px; flex-wrap:wrap;">
+    <div style="flex:1; min-width:200px;">
+      <div style="font-weight:800; font-size:0.95rem; color:#fca5a5; margin-bottom:6px;">
+        <i class="bi bi-exclamation-triangle-fill"></i> Zerar todos os Premiles
+      </div>
+      <p style="font-size:0.82rem; color:var(--text-muted); font-weight:600;
+                line-height:1.6; margin:0;">
+        Zera o saldo de <strong style="color:#fff;">todos</strong> os juniores de todos os PGMs.
+        Use antes de iniciar um novo período quando não quiser encerrar o período formal.
+        <strong style="color:#fca5a5;">Esta ação não pode ser desfeita.</strong>
+      </p>
+    </div>
+    <button onclick="document.getElementById('modal-zerar').style.display='flex'"
+            class="tk-btn tk-btn-sm"
+            style="background:rgba(239,68,68,0.15); color:#fca5a5;
+                   border:1px solid rgba(239,68,68,0.3); flex-shrink:0;
+                   align-self:center;">
+      <i class="bi bi-trash3-fill"></i> Zerar Premiles
+    </button>
+  </div>
+</div>
+
+{# ── Modal de confirmação ── #}
+<div id="modal-zerar"
+     style="display:none; position:fixed; inset:0; z-index:9999;
+            background:rgba(0,0,0,0.75); backdrop-filter:blur(4px);
+            align-items:center; justify-content:center; padding:20px;">
+  <div style="background:var(--bg-card); border:1px solid rgba(239,68,68,0.4);
+              border-radius:var(--radius-xl); padding:32px; max-width:420px; width:100%;">
+
+    <div style="font-size:2.5rem; text-align:center; margin-bottom:16px;">⚠️</div>
+    <div style="font-size:1.1rem; font-weight:900; color:#fff; text-align:center; margin-bottom:8px;">
+      Zerar todos os Premiles?
+    </div>
+    <p style="font-size:0.85rem; color:var(--text-muted); font-weight:600;
+              line-height:1.7; margin-bottom:20px; text-align:center;">
+      O saldo de <strong style="color:#fff;">todos os juniores</strong> será zerado
+      imediatamente. Esta ação é irreversível e será registrada nos logs do sistema.
+    </p>
+
+    <form method="POST" action="{{ url_for('supervisor.zerar_premiles') }}">
+      <div style="margin-bottom:16px;">
+        <label class="tk-label" style="text-align:center; display:block;">
+          Digite <strong style="color:#fca5a5;">ZERAR</strong> para confirmar
+        </label>
+        <input class="tk-input" type="text" name="confirmacao"
+               placeholder="ZERAR"
+               autocomplete="off"
+               oninput="toggleBtnZerar(this.value)"
+               style="text-align:center; font-weight:800; letter-spacing:2px;
+                      border-color:rgba(239,68,68,0.3);" />
+      </div>
+
+      <div style="display:flex; gap:10px;">
+        <button type="button"
+                onclick="document.getElementById('modal-zerar').style.display='none'"
+                class="tk-btn tk-btn-ghost" style="flex:1; justify-content:center;">
+          Cancelar
+        </button>
+        <button type="submit" id="btn-confirmar-zerar"
+                class="tk-btn tk-btn-sm" disabled
+                style="flex:1; justify-content:center; opacity:0.4; cursor:not-allowed;
+                       background:rgba(239,68,68,0.2); color:#fca5a5;
+                       border:1px solid rgba(239,68,68,0.3);">
+          <i class="bi bi-trash3-fill"></i> Confirmar
+        </button>
+      </div>
+    </form>
+
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+function toggleBtnZerar(val) {
+  var btn = document.getElementById('btn-confirmar-zerar');
+  var ok  = val.trim() === 'ZERAR';
+  btn.disabled       = !ok;
+  btn.style.opacity  = ok ? '1' : '0.4';
+  btn.style.cursor   = ok ? 'pointer' : 'not-allowed';
+}
+
+// Fecha modal ao clicar fora do card
+document.getElementById('modal-zerar').addEventListener('click', function(e) {
+  if (e.target === this) this.style.display = 'none';
+});
+
+// Fecha com ESC
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    document.getElementById('modal-zerar').style.display = 'none';
+  }
+});
+</script>
 {% endblock %}

@@ -5,7 +5,6 @@ from app.decorators import requires_role
 from app.models.user import UserRole, User
 from app.models.pgm import PGM, PGMLeader
 from app.models.activity import PremilesBalance
-from app.models.audit import log as audit_log, LogAction
 from app import db
 
 
@@ -586,3 +585,40 @@ def logs():
         total_pages=total_pages,
         total=total,
     )
+
+
+# ── Zerar todos os saldos de Premiles ────────────────────────────────────────
+
+@supervisor_bp.route("/zerar-premiles", methods=["POST"])
+@login_required
+@requires_role(UserRole.SUPERVISOR)
+def zerar_premiles():
+    from app.models.activity import PremilesBalance
+    confirmacao = request.form.get("confirmacao", "").strip()
+
+    # Dupla confirmação: o supervisor precisa digitar "ZERAR" para confirmar
+    if confirmacao != "ZERAR":
+        flash("Confirmação incorreta. Digite ZERAR para confirmar a operação.", "danger")
+        return redirect(url_for("supervisor.dashboard"))
+
+    total_usuarios = db.session.execute(
+        db.select(db.func.count(PremilesBalance.id))
+    ).scalar()
+
+    db.session.execute(
+        db.update(PremilesBalance).values(total_balance=0)
+    )
+
+    audit_log(
+        LogAction.LANCAMENTO_EXCLUIDO,
+        f"Todos os saldos de Premiles foram zerados por {current_user.name} "
+        f"({total_usuarios} juniores afetados)",
+        actor=current_user
+    )
+
+    db.session.commit()
+    flash(
+        f"✅ Saldos zerados com sucesso! {total_usuarios} júnior(es) afetados.",
+        "success"
+    )
+    return redirect(url_for("supervisor.dashboard"))
