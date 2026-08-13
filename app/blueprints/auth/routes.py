@@ -62,13 +62,13 @@ def login():
         return redirect(_dashboard_url())
 
     ip = _get_ip()
+    
+    # 1. Verifica se já está bloqueado ANTES de tentar fazer o login
+    if _is_blocked(ip):
+        flash("Acesso bloqueado por segurança. Fale com o líder do seu PGM para recuperar o acesso.", "danger")
+        return render_template("auth/login.html", bloqueado=True)
 
     if request.method == "POST":
-        if _is_blocked(ip):
-            mins = _remaining_block(ip) // 60 + 1
-            flash(f"Muitas tentativas. Tente novamente em {mins} minuto(s).", "danger")
-            return render_template("auth/login.html", bloqueado=True)
-
         email    = request.form.get("email", "").strip().lower()
         password = request.form.get("password", "")
         remember = bool(request.form.get("remember"))
@@ -95,21 +95,25 @@ def login():
                 return redirect(next_page)
             return redirect(_dashboard_url())
 
+        # Falha no login: registra o erro
         _register_failure(ip)
         audit_log(LogAction.LOGIN_FAIL,
                   f"Tentativa de login falhou para '{email}'",
                   actor=None, ip=ip)
         db.session.commit()
 
+        # Calcula quantas tentativas restam
         data      = _login_attempts.get(ip, {})
         restantes = max(0, MAX_ATTEMPTS - data.get("attempts", 0))
+        
+        # 2. Exibe a mensagem correta baseada nas tentativas restantes
         if restantes == 0:
-            flash(f"Bloqueado por {BLOCK_SECONDS // 60} minutos.", "danger")
+            flash("Acesso bloqueado por segurança. Fale com o líder do seu PGM para recuperar o acesso.", "danger")
+            return render_template("auth/login.html", bloqueado=True)
         else:
             flash(f"E-mail ou senha incorretos. {restantes} tentativa(s) restante(s).", "danger")
 
-    return render_template("auth/login.html", bloqueado=_is_blocked(ip))
-
+    return render_template("auth/login.html", bloqueado=False)
 
 @auth_bp.route("/logout")
 @login_required

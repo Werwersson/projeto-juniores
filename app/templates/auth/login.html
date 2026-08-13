@@ -2,6 +2,14 @@
 {% block title %}Entrar — TeoK!ds.{% endblock %}
 
 {% block content %}
+<style>
+  /* Oculta as mensagens flash do base.html para não duplicar nesta tela.
+     Assim os alertas aparecem apenas dentro do card preto. */
+  main > .mb-3 {
+      display: none !important;
+  }
+</style>
+
 <div class="tk-login-bg">
   <div class="tk-login-card">
 
@@ -13,6 +21,7 @@
                   letter-spacing:1.5px; margin-top:6px;">PROJETO JUNIORES</div>
     </div>
 
+    {# Exibe os alertas apenas dentro do card de login #}
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}{% for category, message in messages %}
         <div class="tk-alert tk-alert-{{ category }}" style="margin-bottom:12px;">
@@ -20,13 +29,6 @@
         </div>
       {% endfor %}{% endif %}
     {% endwith %}
-
-    {% if bloqueado %}
-    <div class="tk-alert tk-alert-danger" style="margin-bottom:16px;">
-      <i class="bi bi-shield-lock-fill"></i>
-      Acesso temporariamente bloqueado por muitas tentativas. Aguarde alguns minutos.
-    </div>
-    {% endif %}
 
     <form method="POST" action="{{ url_for('auth.login') }}">
 
@@ -46,7 +48,8 @@
 
       <div style="display:flex; align-items:center; gap:8px; margin-bottom:24px;">
         <input type="checkbox" id="remember" name="remember"
-               style="accent-color:var(--purple); width:16px; height:16px;" />
+               style="accent-color:var(--purple); width:16px; height:16px;" 
+               {% if bloqueado %}disabled{% endif %} />
         <label for="remember" style="font-size:0.82rem; font-weight:600;
                color:var(--text-muted); cursor:pointer;">Lembrar de mim</label>
       </div>
