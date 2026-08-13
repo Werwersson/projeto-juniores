@@ -22,7 +22,11 @@ class User(UserMixin, db.Model):
     role          = db.Column(db.Enum(UserRole), nullable=False, default=UserRole.JUNIOR)
     pgm_id        = db.Column(db.Integer, db.ForeignKey("pgms.id"), nullable=True)
 
-    # Recuperação de senha
+    # ── Travas de Segurança ──────────────────────────────────────────────────
+    failed_attempts = db.Column(db.Integer, default=0)
+    is_locked       = db.Column(db.Boolean, default=False)
+
+    # ── Recuperação de senha ─────────────────────────────────────────────────
     reset_token        = db.Column(db.String(64), nullable=True, unique=True, index=True)
     reset_token_expiry = db.Column(db.DateTime, nullable=True)
 
