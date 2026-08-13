@@ -90,6 +90,22 @@ def lancamento():
         premiles = int(request.form["premiles"])
         notes = request.form.get("notes", "")
 
+        # NOVO: data da atividade escolhida no formulário (padrão: hoje)
+        activity_date_str = request.form.get("activity_date", "")
+        if activity_date_str:
+            try:
+                activity_date = date.fromisoformat(activity_date_str)
+            except ValueError:
+                flash("Data inválida.", "danger")
+                return redirect(url_for("lider.lancamento"))
+        else:
+            activity_date = date.today()
+
+        # Bloqueia datas futuras (mesma regra do crédito retroativo)
+        if activity_date > date.today():
+            flash("Não é possível lançar atividades de datas futuras.", "warning")
+            return redirect(url_for("lider.lancamento"))
+
         # Valida que o líder tem acesso ao junior
         junior = db.get_or_404(User, junior_id)
         if not current_user.is_supervisor and not current_user.manages_pgm(junior.pgm_id):
@@ -101,6 +117,7 @@ def lancamento():
         log = ManualLog(
             junior_id=junior_id,
             activity_type_id=activity_type_id,
+            activity_date=activity_date,
             premiles_awarded=premiles,
             notes=notes,
             launched_by=current_user.id,
@@ -116,7 +133,8 @@ def lancamento():
             db.session.add(PremilesBalance(junior_id=junior_id, total_balance=premiles))
 
         audit_log(LogAction.LANCAMENTO_MANUAL,
-                  f"{premiles} Premiles creditados para {junior.name} — {activity.name}",
+                  f"{premiles} Premiles creditados para {junior.name} — {activity.name} "
+                  f"(referente a {activity_date.strftime('%d/%m/%Y')})",
                   actor=current_user, target_user=junior)
         db.session.commit()
         flash(f"{premiles} Premiles creditados com sucesso!", "success")
@@ -124,7 +142,78 @@ def lancamento():
 
     return render_template("lider/lancamento.html", juniors=juniors,
                            activities=activities,
-                           checklist_activities=checklist_activities)
+                           checklist_activities=checklist_activities,
+                           hoje=date.today().isoformat())
+
+
+# ── Lançamento em lote (presença do PGM inteiro) ─────────────────────────────
+
+@lider_bp.route("/lancamento-lote", methods=["POST"])
+@login_required
+@requires_role(UserRole.SUPERVISOR, UserRole.LIDER)
+def lancamento_lote():
+    from app.models.activity import ManualLog, PremilesBalance, ActivityType
+
+    activity_type_id = int(request.form["activity_type_id"])
+    premiles = int(request.form["premiles"])
+    notes = request.form.get("notes", "")
+    junior_ids = request.form.getlist("junior_ids")  # checkboxes
+
+    # NOVO: mesma data se aplica a todo o lote (padrão: hoje)
+    activity_date_str = request.form.get("activity_date", "")
+    if activity_date_str:
+        try:
+            activity_date = date.fromisoformat(activity_date_str)
+        except ValueError:
+            flash("Data inválida.", "danger")
+            return redirect(url_for("lider.lancamento"))
+    else:
+        activity_date = date.today()
+
+    if activity_date > date.today():
+        flash("Não é possível lançar atividades de datas futuras.", "warning")
+        return redirect(url_for("lider.lancamento"))
+
+    if not junior_ids:
+        flash("Selecione ao menos um júnior.", "warning")
+        return redirect(url_for("lider.lancamento"))
+
+    activity = db.get_or_404(ActivityType, activity_type_id)
+    creditados = 0
+
+    for jid in junior_ids:
+        junior = db.session.get(User, int(jid))
+        if not junior:
+            continue
+        # Segurança: garante que o líder tem acesso a este júnior
+        if not current_user.is_supervisor and not current_user.manages_pgm(junior.pgm_id):
+            continue
+
+        log = ManualLog(
+            junior_id=junior.id,
+            activity_type_id=activity_type_id,
+            activity_date=activity_date,
+            premiles_awarded=premiles,
+            notes=notes,
+            launched_by=current_user.id,
+        )
+        db.session.add(log)
+
+        balance = junior.balance
+        if balance:
+            balance.total_balance += premiles
+        else:
+            db.session.add(PremilesBalance(junior_id=junior.id, total_balance=premiles))
+
+        creditados += 1
+
+    audit_log(LogAction.LANCAMENTO_LOTE,
+              f"{premiles} Premiles creditados em lote para {creditados} júnior(es) — "
+              f"{activity.name} (referente a {activity_date.strftime('%d/%m/%Y')})",
+              actor=current_user)
+    db.session.commit()
+    flash(f"✅ {premiles} Premiles creditados para {creditados} júnior(es) — {activity.name}.", "success")
+    return redirect(url_for("lider.lancamento"))
 
 
 @lider_bp.route("/credito-retroativo/<int:junior_id>", methods=["POST"])
@@ -264,58 +353,6 @@ def historico():
                            manual_logs=manual_logs,
                            checklist_logs=checklist_logs)
 
-
-# ── Lançamento em lote (presença do PGM inteiro) ─────────────────────────────
-
-@lider_bp.route("/lancamento-lote", methods=["POST"])
-@login_required
-@requires_role(UserRole.SUPERVISOR, UserRole.LIDER)
-def lancamento_lote():
-    from app.models.activity import ManualLog, PremilesBalance, ActivityType
-
-    activity_type_id = int(request.form["activity_type_id"])
-    premiles = int(request.form["premiles"])
-    notes = request.form.get("notes", "")
-    junior_ids = request.form.getlist("junior_ids")  # checkboxes
-
-    if not junior_ids:
-        flash("Selecione ao menos um júnior.", "warning")
-        return redirect(url_for("lider.lancamento"))
-
-    activity = db.get_or_404(ActivityType, activity_type_id)
-    creditados = 0
-
-    for jid in junior_ids:
-        junior = db.session.get(User, int(jid))
-        if not junior:
-            continue
-        # Segurança: garante que o líder tem acesso a este júnior
-        if not current_user.is_supervisor and not current_user.manages_pgm(junior.pgm_id):
-            continue
-
-        log = ManualLog(
-            junior_id=junior.id,
-            activity_type_id=activity_type_id,
-            premiles_awarded=premiles,
-            notes=notes,
-            launched_by=current_user.id,
-        )
-        db.session.add(log)
-
-        balance = junior.balance
-        if balance:
-            balance.total_balance += premiles
-        else:
-            db.session.add(PremilesBalance(junior_id=junior.id, total_balance=premiles))
-
-        creditados += 1
-
-    audit_log(LogAction.LANCAMENTO_LOTE,
-              f"{premiles} Premiles creditados em lote para {creditados} júnior(es) — {activity.name}",
-              actor=current_user)
-    db.session.commit()
-    flash(f"✅ {premiles} Premiles creditados para {creditados} júnior(es) — {activity.name}.", "success")
-    return redirect(url_for("lider.lancamento"))
 
 
 # ── Excluir lançamento manual (com reversão de saldo) ────────────────────────

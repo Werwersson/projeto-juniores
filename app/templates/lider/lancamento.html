@@ -74,6 +74,14 @@
           </div>
         </div>
 
+        <div class="mb-3">
+          <label class="tk-label" for="ind_date">Data da atividade</label>
+          <input class="tk-input" type="date" id="ind_date" name="activity_date" required />
+          <div style="font-size:0.75rem; color:var(--text-muted); font-weight:600; margin-top:5px;">
+            Preenchido automaticamente com hoje. Altere se necessário.
+          </div>
+        </div>
+
         <div class="mb-4">
           <label class="tk-label" for="notes">Observação (opcional)</label>
           <input class="tk-input" type="text" id="notes" name="notes"
@@ -163,6 +171,14 @@
           </div>
         </div>
 
+        <div class="mb-3">
+          <label class="tk-label" for="lote_date">Data da atividade</label>
+          <input class="tk-input" type="date" id="lote_date" name="activity_date" required />
+          <div style="font-size:0.75rem; color:var(--text-muted); font-weight:600; margin-top:5px;">
+            Preenchido automaticamente com hoje. Altere se necessário.
+          </div>
+        </div>
+
         <div class="mb-4">
           <label class="tk-label" for="lote_notes">Observação (opcional)</label>
           <input class="tk-input" type="text" id="lote_notes" name="notes"
@@ -244,8 +260,15 @@
 
 {% block scripts %}
 <script>
-  // Define data máxima do retroativo como hoje
-  document.querySelector('input[type="date"]').max = new Date().toISOString().split('T')[0];
+  // Inicializa todas as datas com hoje e limita ao dia atual
+  const hoje = new Date().toISOString().split('T')[0];
+  ['ind_date', 'lote_date'].forEach(function(id) {
+    const el = document.getElementById(id);
+    if (el) { el.value = hoje; el.max = hoje; }
+  });
+  // Retroativo: só max (sem valor padrão — força escolha consciente)
+  const retDate = document.querySelector('input[name="activity_date"]:not(#ind_date):not(#lote_date)');
+  if (retDate) retDate.max = hoje;
 
   function updateRetroUrl(select) {
     const url = select.options[select.selectedIndex].dataset.url;

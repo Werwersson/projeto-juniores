@@ -69,6 +69,7 @@ class ManualLog(db.Model):
     id               = db.Column(db.Integer, primary_key=True)
     junior_id        = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
     activity_type_id = db.Column(db.Integer, db.ForeignKey("activity_types.id"), nullable=False)
+    activity_date    = db.Column(db.Date, nullable=False, server_default=db.func.current_date())
     premiles_awarded = db.Column(db.Integer, nullable=False)
     notes            = db.Column(db.String(255), nullable=True)
     launched_by      = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
