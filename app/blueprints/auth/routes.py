@@ -7,36 +7,10 @@ from app import db
 import time
 
 SENHA_PADRAO = "juniores2025"
-
-_login_attempts: dict = {}
-MAX_ATTEMPTS  = 5
-BLOCK_SECONDS = 300
-
+MAX_ATTEMPTS = 5
 
 def _get_ip() -> str:
     return request.headers.get("X-Forwarded-For", request.remote_addr or "").split(",")[0].strip()
-
-def _is_blocked(ip: str) -> bool:
-    data = _login_attempts.get(ip)
-    if not data:
-        return False
-    if data.get("blocked_until", 0) > time.time():
-        return True
-    _login_attempts.pop(ip, None)
-    return False
-
-def _register_failure(ip: str):
-    data = _login_attempts.setdefault(ip, {"attempts": 0})
-    data["attempts"] = data.get("attempts", 0) + 1
-    if data["attempts"] >= MAX_ATTEMPTS:
-        data["blocked_until"] = time.time() + BLOCK_SECONDS
-        data["attempts"] = 0
-
-def _register_success(ip: str):
-    _login_attempts.pop(ip, None)
-
-def _remaining_block(ip: str) -> int:
-    return max(0, int(_login_attempts.get(ip, {}).get("blocked_until", 0) - time.time()))
 
 def _dashboard_url() -> str:
     """Retorna a URL do dashboard correto, robusto a String e Enum no role."""
@@ -63,12 +37,20 @@ def login():
 
     ip = _get_ip()
     
-    # 1. Verifica se já está bloqueado ANTES de tentar fazer o login
-    if _is_blocked(ip):
+    # 1. Recupera as falhas da sessão do navegador (funciona perfeitamente no Vercel)
+    tentativas = session.get("failed_attempts", 0)
+    bloqueado = tentativas >= MAX_ATTEMPTS
+
+    # 2. Verifica se já está bloqueado ANTES de tentar fazer o login
+    if bloqueado and request.method == "GET":
         flash("Acesso bloqueado por segurança. Fale com o líder do seu PGM para recuperar o acesso.", "danger")
         return render_template("auth/login.html", bloqueado=True)
 
     if request.method == "POST":
+        if bloqueado:
+            flash("Acesso bloqueado por segurança. Fale com o líder do seu PGM para recuperar o acesso.", "danger")
+            return render_template("auth/login.html", bloqueado=True)
+
         email    = request.form.get("email", "").strip().lower()
         password = request.form.get("password", "")
         remember = bool(request.form.get("remember"))
@@ -78,7 +60,9 @@ def login():
         ).scalar_one_or_none()
 
         if user and user.check_password(password):
-            _register_success(ip)
+            # SUCESSO: Zera as falhas salvas na sessão
+            session.pop("failed_attempts", None)
+            
             login_user(user, remember=remember)
             audit_log(LogAction.LOGIN_OK,
                       f"{user.name} ({user.email}) fez login",
@@ -95,25 +79,27 @@ def login():
                 return redirect(next_page)
             return redirect(_dashboard_url())
 
-        # Falha no login: registra o erro
-        _register_failure(ip)
+        # FALHA: Registra o erro na sessão
+        tentativas += 1
+        session["failed_attempts"] = tentativas
+        
         audit_log(LogAction.LOGIN_FAIL,
                   f"Tentativa de login falhou para '{email}'",
                   actor=None, ip=ip)
         db.session.commit()
 
         # Calcula quantas tentativas restam
-        data      = _login_attempts.get(ip, {})
-        restantes = max(0, MAX_ATTEMPTS - data.get("attempts", 0))
+        restantes = max(0, MAX_ATTEMPTS - tentativas)
         
-        # 2. Exibe a mensagem correta baseada nas tentativas restantes
+        # 3. Exibe a mensagem correta baseada nas tentativas restantes
         if restantes == 0:
             flash("Acesso bloqueado por segurança. Fale com o líder do seu PGM para recuperar o acesso.", "danger")
             return render_template("auth/login.html", bloqueado=True)
         else:
             flash(f"E-mail ou senha incorretos. {restantes} tentativa(s) restante(s).", "danger")
 
-    return render_template("auth/login.html", bloqueado=False)
+    return render_template("auth/login.html", bloqueado=bloqueado)
+
 
 @auth_bp.route("/logout")
 @login_required
