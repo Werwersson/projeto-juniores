@@ -6,7 +6,7 @@ from app.decorators import requires_role
 from app.models.user import UserRole, User
 from app.models.pgm import PGM, PGMLeader
 from app.models.activity import PremilesBalance
-from app.models.audit import AuditLog, LogAction
+from app.models.activity import AuditLog, LogAction
 from app import db
 
 
@@ -540,8 +540,8 @@ def exportar_periodo_pdf(periodo_id):
 @login_required
 @requires_role(UserRole.SUPERVISOR)
 def logs():
-    # Removido: from app.models.audit import AuditLog, LogAction (agora no topo)
-    
+    from app.models.audit import AuditLog, LogAction
+
     # Filtros
     user_id   = request.args.get("user_id", type=int)
     action    = request.args.get("action", "")
@@ -612,7 +612,7 @@ def zerar_premiles():
     )
 
     audit_log(
-        LogAction.LANCAMENTO_EXCLUIDO,
+        "ZERAR_PREMILES", 
         f"Todos os saldos de Premiles foram zerados por {current_user.name} "
         f"({total_usuarios} juniores afetados)",
         actor=current_user
