@@ -85,7 +85,15 @@ body {
 .tk-nav {
   padding: 16px 12px;
   flex: 1;
+  overflow-y: auto;        /* scroll se itens não couberem */
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
 }
+
+.tk-nav::-webkit-scrollbar { width: 4px; }
+.tk-nav::-webkit-scrollbar-track { background: transparent; }
+.tk-nav::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
 
 .tk-nav-label {
   font-size: 0.65rem;
@@ -143,6 +151,7 @@ body {
 .tk-sidebar-footer {
   padding: 16px 12px;
   border-top: 1px solid var(--border);
+  flex-shrink: 0;          /* nunca comprime — sempre visível */
 }
 
 .tk-user-pill {

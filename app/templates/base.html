@@ -50,17 +50,10 @@
   <nav class="tk-nav">
 
     {% if current_user.is_supervisor %}
-      <div class="tk-nav-label">Visão geral</div>
       <a href="{{ url_for('supervisor.dashboard') }}"
          class="tk-nav-item {% if request.endpoint == 'supervisor.dashboard' %}active{% endif %}">
         <span class="tk-nav-icon"><i class="bi bi-grid-fill"></i></span>
         Dashboard
-      </a>
-      <div class="tk-nav-label">Grupos</div>
-      <a href="{{ url_for('supervisor.dashboard') }}#pgms"
-         class="tk-nav-item">
-        <span class="tk-nav-icon"><i class="bi bi-people-fill"></i></span>
-        Todos os PGMs
       </a>
       <a href="{{ url_for('lider.lancamento') }}"
          class="tk-nav-item {% if request.endpoint == 'lider.lancamento' %}active{% endif %}">
@@ -77,6 +70,11 @@
         <span class="tk-nav-icon"><i class="bi bi-clock-history"></i></span>
         Histórico
       </a>
+      <a href="{{ url_for('lider.resumos') }}"
+         class="tk-nav-item {% if request.endpoint == 'lider.resumos' %}active{% endif %}">
+        <span class="tk-nav-icon"><i class="bi bi-journal-check"></i></span>
+        Resumos
+      </a>
       <div class="tk-nav-label">Administração</div>
       <a href="{{ url_for('supervisor.usuarios') }}"
          class="tk-nav-item {% if 'usuario' in (request.endpoint or '') %}active{% endif %}">
@@ -88,11 +86,6 @@
         <span class="tk-nav-icon"><i class="bi bi-list-check"></i></span>
         Atividades
       </a>
-      <a href="{{ url_for('supervisor.logs') }}"
-         class="tk-nav-item {% if request.endpoint == 'supervisor.logs' %}active{% endif %}">
-        <span class="tk-nav-icon"><i class="bi bi-journal-text"></i></span>
-        Logs
-      </a>
       <a href="{{ url_for('period.index') }}"
          class="tk-nav-item {% if 'period' in (request.endpoint or '') %}active{% endif %}">
         <span class="tk-nav-icon"><i class="bi bi-calendar2-check-fill"></i></span>
@@ -103,10 +96,10 @@
         <span class="tk-nav-icon"><i class="bi bi-file-earmark-bar-graph-fill"></i></span>
         Relatórios
       </a>
-      <a href="{{ url_for('period.index') }}"
-         class="tk-nav-item {% if 'period' in (request.endpoint or '') %}active{% endif %}">
-        <span class="tk-nav-icon"><i class="bi bi-calendar2-check-fill"></i></span>
-        Períodos
+      <a href="{{ url_for('supervisor.logs') }}"
+         class="tk-nav-item {% if request.endpoint == 'supervisor.logs' %}active{% endif %}">
+        <span class="tk-nav-icon"><i class="bi bi-journal-text"></i></span>
+        Logs
       </a>
 
     {% elif current_user.is_lider %}
