@@ -46,156 +46,110 @@
     </div>
   </div>
 
-  {# Navegação com rolagem própria #}
+  {# Navegação com barra de rolagem (Flex 1) #}
   <nav class="tk-nav" style="flex: 1 1 auto; overflow-y: auto; min-height: 0; padding-bottom: 1rem;">
 
     {% if current_user.is_supervisor %}
-      <a href="{{ url_for('supervisor.dashboard') }}"
-         class="tk-nav-item {% if request.endpoint == 'supervisor.dashboard' %}active{% endif %}">
-        <span class="tk-nav-icon"><i class="bi bi-grid-fill"></i></span>
-        Dashboard
+      <a href="{{ url_for('supervisor.dashboard') }}" class="tk-nav-item {% if request.endpoint == 'supervisor.dashboard' %}active{% endif %}">
+        <span class="tk-nav-icon"><i class="bi bi-grid-fill"></i></span> Dashboard
       </a>
-      <a href="{{ url_for('lider.lancamento') }}"
-         class="tk-nav-item {% if request.endpoint == 'lider.lancamento' %}active{% endif %}">
-        <span class="tk-nav-icon"><i class="bi bi-plus-circle-fill"></i></span>
-        Lançamento
+      <a href="{{ url_for('lider.lancamento') }}" class="tk-nav-item {% if request.endpoint == 'lider.lancamento' %}active{% endif %}">
+        <span class="tk-nav-icon"><i class="bi bi-plus-circle-fill"></i></span> Lançamento
       </a>
-      <a href="{{ url_for('supervisor.ranking') }}"
-         class="tk-nav-item {% if 'ranking' in (request.endpoint or '') %}active{% endif %}">
-        <span class="tk-nav-icon"><i class="bi bi-trophy-fill"></i></span>
-        Ranking
+      <a href="{{ url_for('supervisor.ranking') }}" class="tk-nav-item {% if 'ranking' in (request.endpoint or '') %}active{% endif %}">
+        <span class="tk-nav-icon"><i class="bi bi-trophy-fill"></i></span> Ranking
       </a>
-      <a href="{{ url_for('lider.historico') }}"
-         class="tk-nav-item {% if request.endpoint == 'lider.historico' %}active{% endif %}">
-        <span class="tk-nav-icon"><i class="bi bi-clock-history"></i></span>
-        Histórico
+      <a href="{{ url_for('lider.historico') }}" class="tk-nav-item {% if request.endpoint == 'lider.historico' %}active{% endif %}">
+        <span class="tk-nav-icon"><i class="bi bi-clock-history"></i></span> Histórico
       </a>
-      <a href="{{ url_for('lider.resumos') }}"
-         class="tk-nav-item {% if request.endpoint == 'lider.resumos' %}active{% endif %}">
-        <span class="tk-nav-icon"><i class="bi bi-journal-check"></i></span>
-        Resumos
+      <a href="{{ url_for('lider.resumos') }}" class="tk-nav-item {% if request.endpoint == 'lider.resumos' %}active{% endif %}">
+        <span class="tk-nav-icon"><i class="bi bi-journal-check"></i></span> Resumos
       </a>
       <div class="tk-nav-label">Administração</div>
-      <a href="{{ url_for('supervisor.usuarios') }}"
-         class="tk-nav-item {% if 'usuario' in (request.endpoint or '') %}active{% endif %}">
-        <span class="tk-nav-icon"><i class="bi bi-person-gear"></i></span>
-        Usuários
+      <a href="{{ url_for('supervisor.usuarios') }}" class="tk-nav-item {% if 'usuario' in (request.endpoint or '') %}active{% endif %}">
+        <span class="tk-nav-icon"><i class="bi bi-person-gear"></i></span> Usuários
       </a>
-      <a href="{{ url_for('supervisor.atividades') }}"
-         class="tk-nav-item {% if request.endpoint == 'supervisor.atividades' %}active{% endif %}">
-        <span class="tk-nav-icon"><i class="bi bi-list-check"></i></span>
-        Atividades
+      <a href="{{ url_for('supervisor.atividades') }}" class="tk-nav-item {% if request.endpoint == 'supervisor.atividades' %}active{% endif %}">
+        <span class="tk-nav-icon"><i class="bi bi-list-check"></i></span> Atividades
       </a>
-      <a href="{{ url_for('period.index') }}"
-         class="tk-nav-item {% if 'period' in (request.endpoint or '') %}active{% endif %}">
-        <span class="tk-nav-icon"><i class="bi bi-calendar2-check-fill"></i></span>
-        Períodos
+      <a href="{{ url_for('period.index') }}" class="tk-nav-item {% if 'period' in (request.endpoint or '') %}active{% endif %}">
+        <span class="tk-nav-icon"><i class="bi bi-calendar2-check-fill"></i></span> Períodos
       </a>
-      <a href="{{ url_for('supervisor.relatorios') }}"
-         class="tk-nav-item {% if request.endpoint == 'supervisor.relatorios' %}active{% endif %}">
-        <span class="tk-nav-icon"><i class="bi bi-file-earmark-bar-graph-fill"></i></span>
-        Relatórios
+      <a href="{{ url_for('supervisor.relatorios') }}" class="tk-nav-item {% if request.endpoint == 'supervisor.relatorios' %}active{% endif %}">
+        <span class="tk-nav-icon"><i class="bi bi-file-earmark-bar-graph-fill"></i></span> Relatórios
       </a>
-      <a href="{{ url_for('supervisor.logs') }}"
-         class="tk-nav-item {% if request.endpoint == 'supervisor.logs' %}active{% endif %}">
-        <span class="tk-nav-icon"><i class="bi bi-journal-text"></i></span>
-        Logs
+      <a href="{{ url_for('supervisor.logs') }}" class="tk-nav-item {% if request.endpoint == 'supervisor.logs' %}active{% endif %}">
+        <span class="tk-nav-icon"><i class="bi bi-journal-text"></i></span> Logs
       </a>
 
     {% elif current_user.is_lider %}
       <div class="tk-nav-label">Meu PGM</div>
-      <a href="{{ url_for('lider.dashboard') }}"
-         class="tk-nav-item {% if request.endpoint == 'lider.dashboard' %}active{% endif %}">
-        <span class="tk-nav-icon"><i class="bi bi-grid-fill"></i></span>
-        Dashboard
+      <a href="{{ url_for('lider.dashboard') }}" class="tk-nav-item {% if request.endpoint == 'lider.dashboard' %}active{% endif %}">
+        <span class="tk-nav-icon"><i class="bi bi-grid-fill"></i></span> Dashboard
       </a>
-      <a href="{{ url_for('lider.lancamento') }}"
-         class="tk-nav-item {% if request.endpoint == 'lider.lancamento' %}active{% endif %}">
-        <span class="tk-nav-icon"><i class="bi bi-plus-circle-fill"></i></span>
-        Lançar atividade
+      <a href="{{ url_for('lider.lancamento') }}" class="tk-nav-item {% if request.endpoint == 'lider.lancamento' %}active{% endif %}">
+        <span class="tk-nav-icon"><i class="bi bi-plus-circle-fill"></i></span> Lançar atividade
       </a>
-      <a href="{{ url_for('lider.ranking') }}"
-         class="tk-nav-item {% if request.endpoint == 'lider.ranking' %}active{% endif %}">
-        <span class="tk-nav-icon"><i class="bi bi-trophy-fill"></i></span>
-        Ranking
+      <a href="{{ url_for('lider.ranking') }}" class="tk-nav-item {% if request.endpoint == 'lider.ranking' %}active{% endif %}">
+        <span class="tk-nav-icon"><i class="bi bi-trophy-fill"></i></span> Ranking
       </a>
-      <a href="{{ url_for('lider.resumos') }}"
-         class="tk-nav-item {% if request.endpoint == 'lider.resumos' %}active{% endif %}">
-        <span class="tk-nav-icon"><i class="bi bi-journal-text"></i></span>
-        Resumos
+      <a href="{{ url_for('lider.resumos') }}" class="tk-nav-item {% if request.endpoint == 'lider.resumos' %}active{% endif %}">
+        <span class="tk-nav-icon"><i class="bi bi-journal-text"></i></span> Resumos
       </a>
-      <a href="{{ url_for('lider.historico') }}"
-         class="tk-nav-item {% if request.endpoint == 'lider.historico' %}active{% endif %}">
-        <span class="tk-nav-icon"><i class="bi bi-clock-history"></i></span>
-        Histórico
+      <a href="{{ url_for('lider.historico') }}" class="tk-nav-item {% if request.endpoint == 'lider.historico' %}active{% endif %}">
+        <span class="tk-nav-icon"><i class="bi bi-clock-history"></i></span> Histórico
       </a>
 
     {% elif current_user.is_junior %}
       <div class="tk-nav-label">Minha área</div>
-      <a href="{{ url_for('junior.dashboard') }}"
-         class="tk-nav-item {% if request.endpoint == 'junior.dashboard' %}active{% endif %}">
-        <span class="tk-nav-icon"><i class="bi bi-house-fill"></i></span>
-        Início
+      <a href="{{ url_for('junior.dashboard') }}" class="tk-nav-item {% if request.endpoint == 'junior.dashboard' %}active{% endif %}">
+        <span class="tk-nav-icon"><i class="bi bi-house-fill"></i></span> Início
       </a>
-      <a href="{{ url_for('junior.checklist') }}"
-         class="tk-nav-item {% if request.endpoint == 'junior.checklist' %}active{% endif %}">
-        <span class="tk-nav-icon"><i class="bi bi-check2-circle"></i></span>
-        Checklist
+      <a href="{{ url_for('junior.checklist') }}" class="tk-nav-item {% if request.endpoint == 'junior.checklist' %}active{% endif %}">
+        <span class="tk-nav-icon"><i class="bi bi-check2-circle"></i></span> Checklist
       </a>
-      <a href="{{ url_for('junior.extrato') }}"
-         class="tk-nav-item {% if request.endpoint == 'junior.extrato' %}active{% endif %}">
-        <span class="tk-nav-icon"><i class="bi bi-receipt"></i></span>
-        Meu extrato
+      <a href="{{ url_for('junior.extrato') }}" class="tk-nav-item {% if request.endpoint == 'junior.extrato' %}active{% endif %}">
+        <span class="tk-nav-icon"><i class="bi bi-receipt"></i></span> Meu extrato
       </a>
     {% endif %}
 
   </nav>
 
-  {# User pill - Fixo no rodapé #}
-  <div class="tk-sidebar-footer" style="flex: 0 0 auto; margin-top: auto; border-top: 1px solid var(--border);">
-
-    {# Info do usuário #}
-    <a href="{{ url_for('auth.perfil') }}" class="tk-user-pill" style="text-decoration:none;">
-      <div class="tk-avatar av-{{ current_user.role.value if current_user.role.value is defined else current_user.role }}"
-           style="flex-shrink:0;">
-        {{ current_user.name[0].upper() }}
-      </div>
-      <div class="tk-user-info" style="min-width:0; flex:1;">
-        <div class="tk-user-name"
-             style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
-          {{ current_user.name }}
+  {# Rodapé do Sidebar (Sempre Fixo embaixo) #}
+  <div class="tk-sidebar-footer" style="flex: 0 0 auto; margin-top: auto; border-top: 1px solid var(--border); padding: 12px;">
+    
+    <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+      
+      {# Lado Esquerdo: Info do Usuário #}
+      <a href="{{ url_for('auth.perfil') }}" style="display: flex; align-items: center; gap: 10px; text-decoration: none; flex: 1; min-width: 0; color: inherit;">
+        <div class="tk-avatar av-{{ current_user.role.value if current_user.role.value is defined else current_user.role }}" style="flex-shrink:0;">
+          {{ current_user.name[0].upper() }}
         </div>
-        <div class="tk-user-role">
-          {{ (current_user.role.value if current_user.role.value is defined else current_user.role) | capitalize }}
+        <div class="tk-user-info" style="min-width:0;">
+          <div class="tk-user-name" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-weight: bold;">
+            {{ current_user.name }}
+          </div>
+          <div class="tk-user-role" style="font-size: 0.8rem; opacity: 0.7;">
+            {{ (current_user.role.value if current_user.role.value is defined else current_user.role) | capitalize }}
+          </div>
         </div>
-      </div>
-    </a>
+      </a>
 
-    {# Ações — linha separada, sempre visível #}
-    <div style="display:flex; gap:4px; margin-top:8px; padding-top:8px;">
-      
-      {# Botão Trocar Senha com Ícone de Chave #}
-      <a href="{{ url_for('auth.trocar_senha') }}"
-         class="tk-btn tk-btn-ghost tk-btn-sm"
-         style="flex:1; justify-content:center; gap:6px; font-size:0.8rem;"
-         title="Trocar senha">
-        <i class="bi bi-key-fill"></i>
-        <span>Trocar senha</span>
-      </a>
-      
-      {# Botão Sair com Ícone de Porta Vermelha #}
-      <a href="{{ url_for('auth.logout') }}"
-         class="tk-btn tk-btn-sm"
-         style="flex:1; justify-content:center; gap:6px; font-size:0.8rem;
-                background:rgba(239,68,68,0.1); color:#ef4444;
-                border:1px solid rgba(239,68,68,0.2);"
-         title="Sair">
-        <i class="bi bi-door-open-fill" style="color: #ef4444; font-size: 1.1rem;"></i>
-        <span>Sair</span>
-      </a>
-      
+      {# Lado Direito: Apenas os Ícones (Chave e Porta Vermelha) #}
+      <div style="display: flex; gap: 12px; flex-shrink: 0; align-items: center;">
+        <a href="{{ url_for('auth.trocar_senha') }}" title="Trocar senha" 
+           style="color: var(--text-muted, #9ca3af); font-size: 1.25rem; transition: transform 0.2s;"
+           onmouseover="this.style.transform='scale(1.15)'" onmouseout="this.style.transform='scale(1)'">
+          <i class="bi bi-key-fill"></i>
+        </a>
+        <a href="{{ url_for('auth.logout') }}" title="Sair" 
+           style="color: #ef4444; font-size: 1.25rem; transition: transform 0.2s;"
+           onmouseover="this.style.transform='scale(1.15)'" onmouseout="this.style.transform='scale(1)'">
+          <i class="bi bi-door-open-fill"></i>
+        </a>
+      </div>
+
     </div>
-
   </div>
 
 </aside>
