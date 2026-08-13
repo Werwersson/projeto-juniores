@@ -589,13 +589,15 @@ def logs():
     )
 
 
-# ── Zerar todos os saldos de Premiles ────────────────────────────────────────
+# ── Zerar todos os saldos de Premiles e Extratos ─────────────────────────────
 
 @supervisor_bp.route("/zerar-premiles", methods=["POST"])
 @login_required
 @requires_role(UserRole.SUPERVISOR)
 def zerar_premiles():
-    from app.models.activity import PremilesBalance
+    # Importamos os logs para poder apagá-los
+    from app.models.activity import PremilesBalance, ManualLog, ChecklistLog
+    
     confirmacao = request.form.get("confirmacao", "").strip()
 
     # Dupla confirmação: o supervisor precisa digitar "ZERAR" para confirmar
@@ -607,20 +609,27 @@ def zerar_premiles():
         db.select(db.func.count(PremilesBalance.id))
     ).scalar()
 
+    # 1. Zera os saldos de todos os juniores
     db.session.execute(
         db.update(PremilesBalance).values(total_balance=0)
     )
 
+    # 2. Limpa os extratos (Apaga os históricos de lançamentos e checklists)
+    db.session.execute(db.delete(ManualLog))
+    db.session.execute(db.delete(ChecklistLog))
+
+    # 3. Registra a auditoria
     audit_log(
-        "ZERAR_PREMILES", 
-        f"Todos os saldos de Premiles foram zerados por {current_user.name} "
+        "LANCAMENTO_EXCLUIDO",
+        f"Todos os saldos de Premiles foram zerados e os extratos foram limpos por {current_user.name} "
         f"({total_usuarios} juniores afetados)",
         actor=current_user
     )
 
     db.session.commit()
+    
     flash(
-        f"✅ Saldos zerados com sucesso! {total_usuarios} júnior(es) afetados.",
+        f"✅ Saldos e extratos zerados com sucesso! {total_usuarios} júnior(es) começaram um novo ciclo.",
         "success"
     )
     return redirect(url_for("supervisor.dashboard"))
