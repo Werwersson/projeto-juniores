@@ -1,5 +1,6 @@
 from flask import render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
+from app.services.audit_service import audit_log
 from app.blueprints.supervisor import supervisor_bp
 from app.decorators import requires_role
 from app.models.user import UserRole, User
