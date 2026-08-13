@@ -214,6 +214,34 @@ def excluir_usuario(user_id):
     return redirect(url_for("supervisor.usuarios"))
 
 
+@supervisor_bp.route("/usuarios/<int:user_id>/desbloquear", methods=["POST"])
+@login_required
+@requires_role(UserRole.SUPERVISOR)
+def desbloquear_usuario(user_id):
+    user = db.get_or_404(User, user_id)
+
+    # Se a conta não estiver bloqueada, apenas avisa e volta
+    if getattr(user, 'is_locked', False) is False:
+        flash(f"A conta de {user.name} não está bloqueada.", "info")
+        return redirect(url_for("supervisor.usuarios"))
+
+    # Remove a trava e zera os erros
+    user.is_locked = False
+    user.failed_attempts = 0
+    
+    # Registra no log usando USUARIO_EDITADO para manter compatibilidade com o banco
+    audit_log(
+        LogAction.USUARIO_EDITADO,
+        f"A conta de {user.name} ({user.email}) foi desbloqueada manualmente",
+        actor=current_user, target_user=user
+    )
+    
+    db.session.commit()
+    flash(f"✅ Conta de {user.name} foi desbloqueada com sucesso!", "success")
+    
+    return redirect(url_for("supervisor.usuarios"))
+
+
 # ── Ranking ───────────────────────────────────────────────────────────────────
 
 @supervisor_bp.route("/ranking")
