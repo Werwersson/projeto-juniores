@@ -1,4 +1,5 @@
 import os
+from urllib import response
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
@@ -34,7 +35,8 @@ def create_app(config_name="production"):
         response.headers["Content-Security-Policy"] = (
             "default-src 'self'; "
             "script-src 'self' cdn.jsdelivr.net; "
-            "style-src 'self' cdn.jsdelivr.net 'unsafe-inline'; "
+            "style-src 'self' cdn.jsdelivr.net fonts.googleapis.com 'unsafe-inline'; "
+            "font-src 'self' cdn.jsdelivr.net fonts.gstatic.com; "
             "img-src 'self' data:; "
             "frame-ancestors 'none';"
         )
