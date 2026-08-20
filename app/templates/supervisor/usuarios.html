@@ -14,7 +14,7 @@
 </div>
 
 {# Filtro rápido por role #}
-<div style="display:flex; gap:8px; margin-bottom:20px; flex-wrap:wrap;">
+<div style="display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap;">
   <button class="tk-btn tk-btn-ghost tk-btn-sm filtro-btn active" data-role="todos">
     Todos ({{ usuarios | length }})
   </button>
@@ -32,11 +32,19 @@
   </button>
 </div>
 
+{# Campo de pesquisa por nome #}
+<div style="position:relative; margin-bottom:20px;">
+  <i class="bi bi-search" style="position:absolute; left:14px; top:50%; transform:translateY(-50%);
+     color:var(--text-muted); font-size:0.9rem; pointer-events:none;"></i>
+  <input type="text" id="busca-usuario" placeholder="Pesquisar por nome..."
+         class="tk-input" style="padding-left:38px; width:100%; max-width:360px;">
+</div>
+
 <div class="tk-card">
   <table class="tk-table" id="tabela-usuarios">
     <thead>
       <tr>
-        <th>E-mail</th>
+        <th>Nome</th>
         <th>E-mail</th>
         <th>Papel</th>
         <th>PGM / Grupo</th>
@@ -46,7 +54,7 @@
     </thead>
     <tbody>
       {% for u in usuarios %}
-      <tr data-role="{{ u.role.value }}">
+      <tr data-role="{{ u.role.value }}" data-nome="{{ u.name | lower }}">
         <td>
           <div style="display:flex; align-items:center; gap:10px;">
             <div class="tk-avatar av-{{ u.role.value }}">{{ u.name[0].upper() }}</div>
@@ -102,7 +110,7 @@
         </td>
       </tr>
       {% else %}
-      <tr>
+      <tr id="linha-vazia">
         <td colspan="6" style="text-align:center; padding:40px; color:var(--text-muted); font-weight:600;">
           Nenhum usuário cadastrado.
         </td>
@@ -110,21 +118,47 @@
       {% endfor %}
     </tbody>
   </table>
+
+  {# Mensagem de nenhum resultado na busca/filtro #}
+  <div id="sem-resultados" style="display:none; text-align:center; padding:40px; color:var(--text-muted); font-weight:600;">
+    <i class="bi bi-search" style="font-size:1.8rem; display:block; margin-bottom:8px;"></i>
+    Nenhum usuário encontrado para este filtro.
+  </div>
 </div>
 
 {% endblock %}
 
 {% block scripts %}
 <script>
+  let filtroAtivo = 'todos';
+
+  function aplicarFiltros() {
+    const busca = document.getElementById('busca-usuario').value.toLowerCase().trim();
+    const rows  = document.querySelectorAll('#tabela-usuarios tbody tr[data-role]');
+    let visiveis = 0;
+
+    rows.forEach(row => {
+      const roleOk  = (filtroAtivo === 'todos' || row.dataset.role === filtroAtivo);
+      const nomeOk  = (busca === '' || row.dataset.nome.includes(busca));
+      const mostrar = roleOk && nomeOk;
+      row.style.display = mostrar ? '' : 'none';
+      if (mostrar) visiveis++;
+    });
+
+    document.getElementById('sem-resultados').style.display = visiveis === 0 ? '' : 'none';
+  }
+
+  // Filtro por role
   document.querySelectorAll('.filtro-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.filtro-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
-      const role = btn.dataset.role;
-      document.querySelectorAll('#tabela-usuarios tbody tr[data-role]').forEach(row => {
-        row.style.display = (role === 'todos' || row.dataset.role === role) ? '' : 'none';
-      });
+      filtroAtivo = btn.dataset.role;
+      aplicarFiltros();
     });
   });
+
+  // Busca por nome
+  document.getElementById('busca-usuario').addEventListener('input', aplicarFiltros);
 </script>
 {% endblock %}
