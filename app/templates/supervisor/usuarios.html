@@ -20,15 +20,15 @@
   </button>
   <button class="tk-btn tk-btn-ghost tk-btn-sm filtro-btn" data-role="supervisor">
     <i class="bi bi-shield-fill"></i>
-    Supervisores ({{ usuarios | selectattr('role.value', 'equalto', 'supervisor') | list | length }})
+    Supervisores ({{ usuarios | selectattr('is_supervisor') | list | length }})
   </button>
   <button class="tk-btn tk-btn-ghost tk-btn-sm filtro-btn" data-role="lider">
     <i class="bi bi-star-fill"></i>
-    Líderes ({{ usuarios | selectattr('role.value', 'equalto', 'lider') | list | length }})
+    Líderes ({{ usuarios | selectattr('is_lider') | list | length }})
   </button>
   <button class="tk-btn tk-btn-ghost tk-btn-sm filtro-btn" data-role="junior">
     <i class="bi bi-person-fill"></i>
-    Juniores ({{ usuarios | selectattr('role.value', 'equalto', 'junior') | list | length }})
+    Juniores ({{ usuarios | selectattr('is_junior') | list | length }})
   </button>
 </div>
 
@@ -54,23 +54,23 @@
     </thead>
     <tbody>
       {% for u in usuarios %}
-      <tr data-role="{{ u.role.value }}" data-nome="{{ u.name | lower }}">
+      <tr data-role="{{ u._role_str() }}" data-nome="{{ u.name | lower }}">
         <td>
           <div style="display:flex; align-items:center; gap:10px;">
-            <div class="tk-avatar av-{{ u.role.value }}">{{ u.name[0].upper() }}</div>
+            <div class="tk-avatar av-{{ u._role_str() }}">{{ u.name[0].upper() }}</div>
             <span style="font-weight:700;">{{ u.name }}</span>
           </div>
         </td>
         <td style="color:var(--text-muted); font-size:0.85rem;">{{ u.email or '—' }}</td>
         <td>
-          <span class="tk-badge tk-badge-{{ u.role.value }}">
-            {{ u.role.value | capitalize }}
+          <span class="tk-badge tk-badge-{{ u._role_str() }}">
+            {{ u._role_str() | capitalize }}
           </span>
         </td>
         <td style="font-size:0.85rem; color:var(--text-soft);">
-          {% if u.role.value == 'junior' %}
+          {% if u.is_junior %}
             {{ u.pgm.name if u.pgm else '—' }}
-          {% elif u.role.value == 'lider' %}
+          {% elif u.is_lider %}
             {% set pgms_lider = u.led_pgms | map(attribute='pgm') | list %}
             {{ pgms_lider | map(attribute='name') | join(', ') if pgms_lider else '—' }}
           {% else %}
@@ -78,7 +78,7 @@
           {% endif %}
         </td>
         <td>
-          {% if u.role.value == 'junior' %}
+          {% if u.is_junior %}
             <span class="tk-premiles">⭐ {{ u.balance.total_balance if u.balance else 0 }}</span>
           {% else %}
             <span style="color:var(--text-muted); font-size:0.8rem;">—</span>
@@ -86,6 +86,12 @@
         </td>
         <td>
           <div style="display:flex; gap:6px; flex-wrap:wrap;">
+            {% if u.is_junior %}
+            <a href="{{ url_for('supervisor.junior_detail', junior_id=u.id) }}"
+               class="tk-btn tk-btn-ghost tk-btn-sm" title="Ver perfil do júnior">
+              <i class="bi bi-eye"></i>
+            </a>
+            {% endif %}
             <a href="{{ url_for('supervisor.editar_usuario', user_id=u.id) }}"
                class="tk-btn tk-btn-ghost tk-btn-sm" title="Editar usuário">
               <i class="bi bi-pencil"></i>
@@ -130,6 +136,7 @@
 
 {% block scripts %}
 <script>
+document.addEventListener('DOMContentLoaded', function () {
   let filtroAtivo = 'todos';
 
   function aplicarFiltros() {
@@ -137,7 +144,7 @@
     const rows  = document.querySelectorAll('#tabela-usuarios tbody tr[data-role]');
     let visiveis = 0;
 
-    rows.forEach(row => {
+    rows.forEach(function(row) {
       const roleOk  = (filtroAtivo === 'todos' || row.dataset.role === filtroAtivo);
       const nomeOk  = (busca === '' || row.dataset.nome.includes(busca));
       const mostrar = roleOk && nomeOk;
@@ -145,13 +152,14 @@
       if (mostrar) visiveis++;
     });
 
-    document.getElementById('sem-resultados').style.display = visiveis === 0 ? '' : 'none';
+    const semRes = document.getElementById('sem-resultados');
+    if (semRes) semRes.style.display = visiveis === 0 ? '' : 'none';
   }
 
   // Filtro por role
-  document.querySelectorAll('.filtro-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.filtro-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.filtro-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      document.querySelectorAll('.filtro-btn').forEach(function(b) { b.classList.remove('active'); });
       btn.classList.add('active');
       filtroAtivo = btn.dataset.role;
       aplicarFiltros();
@@ -159,6 +167,8 @@
   });
 
   // Busca por nome
-  document.getElementById('busca-usuario').addEventListener('input', aplicarFiltros);
+  const buscaInput = document.getElementById('busca-usuario');
+  if (buscaInput) buscaInput.addEventListener('input', aplicarFiltros);
+});
 </script>
 {% endblock %}
