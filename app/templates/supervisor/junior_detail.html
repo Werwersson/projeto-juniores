@@ -60,6 +60,69 @@
   </div>
 </div>
 
+{# Dados pessoais #}
+{% if junior.nome_pai or junior.nome_mae or junior.data_nascimento or junior.alergias %}
+<div class="tk-card mb-3">
+  <div style="font-size:0.72rem; font-weight:800; letter-spacing:1px;
+              text-transform:uppercase; color:var(--text-muted); margin-bottom:16px;">
+    Dados pessoais
+  </div>
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+
+    {% if junior.data_nascimento %}
+    <div style="padding:12px; background:var(--bg-card2); border-radius:var(--radius-sm);">
+      <div style="font-size:0.7rem; color:var(--text-muted); font-weight:700; margin-bottom:4px;">
+        Data de nascimento
+      </div>
+      <div style="font-weight:700; font-size:0.88rem;">
+        {{ junior.data_nascimento.strftime('%d/%m/%Y') }}
+      </div>
+    </div>
+    {% endif %}
+
+    {% if junior.nome_pai %}
+    <div style="padding:12px; background:var(--bg-card2); border-radius:var(--radius-sm);">
+      <div style="font-size:0.7rem; color:var(--text-muted); font-weight:700; margin-bottom:4px;">
+        Nome do pai
+      </div>
+      <div style="font-weight:700; font-size:0.88rem;">{{ junior.nome_pai }}</div>
+    </div>
+    {% endif %}
+
+    {% if junior.nome_mae %}
+    <div style="padding:12px; background:var(--bg-card2); border-radius:var(--radius-sm);">
+      <div style="font-size:0.7rem; color:var(--text-muted); font-weight:700; margin-bottom:4px;">
+        Nome da mãe
+      </div>
+      <div style="font-weight:700; font-size:0.88rem;">{{ junior.nome_mae }}</div>
+    </div>
+    {% endif %}
+
+    {% if junior.responsavel %}
+    <div style="padding:12px; background:var(--bg-card2); border-radius:var(--radius-sm);">
+      <div style="font-size:0.7rem; color:var(--text-muted); font-weight:700; margin-bottom:4px;">
+        Responsável
+      </div>
+      <div style="font-weight:700; font-size:0.88rem;">{{ junior.responsavel }}</div>
+    </div>
+    {% endif %}
+
+  </div>
+
+  {% if junior.alergias %}
+  <div style="margin-top:12px; padding:12px 14px; background:rgba(239,68,68,0.08);
+              border:1px solid rgba(239,68,68,0.2); border-radius:var(--radius-sm);">
+    <div style="font-size:0.7rem; font-weight:800; color:#fca5a5; margin-bottom:4px;">
+      <i class="bi bi-exclamation-triangle-fill"></i> Alergias
+    </div>
+    <div style="font-size:0.85rem; font-weight:600; color:var(--text-soft);">
+      {{ junior.alergias }}
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endif %}
+
 {# Extrato completo #}
 <div class="tk-card">
   <div style="font-size:0.72rem; font-weight:800; letter-spacing:1px; text-transform:uppercase; color:var(--text-muted); margin-bottom:20px;">

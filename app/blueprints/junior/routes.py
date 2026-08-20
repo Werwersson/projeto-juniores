@@ -154,3 +154,39 @@ def extrato():
         manual_logs=manual_logs,
         saldo=saldo,
     )
+
+
+# ── Perfil do júnior ──────────────────────────────────────────────────────────
+
+@junior_bp.route("/perfil", methods=["GET", "POST"])
+@login_required
+@requires_role(UserRole.JUNIOR)
+def perfil():
+    from datetime import date as date_type
+
+    if request.method == "POST":
+        nome_pai        = request.form.get("nome_pai", "").strip() or None
+        nome_mae        = request.form.get("nome_mae", "").strip() or None
+        responsavel     = request.form.get("responsavel", "").strip() or None
+        alergias        = request.form.get("alergias", "").strip() or None
+        nasc_str        = request.form.get("data_nascimento", "").strip()
+
+        data_nascimento = None
+        if nasc_str:
+            try:
+                data_nascimento = date_type.fromisoformat(nasc_str)
+            except ValueError:
+                flash("Data de nascimento inválida.", "danger")
+                return render_template("junior/perfil.html")
+
+        current_user.nome_pai        = nome_pai
+        current_user.nome_mae        = nome_mae
+        current_user.responsavel     = responsavel
+        current_user.alergias        = alergias
+        current_user.data_nascimento = data_nascimento
+
+        db.session.commit()
+        flash("Perfil atualizado com sucesso! ✅", "success")
+        return redirect(url_for("junior.perfil"))
+
+    return render_template("junior/perfil.html")

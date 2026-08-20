@@ -1,0 +1,217 @@
+{% extends "base.html" %}
+{% block title %}Meu Perfil — TeoK!ds.{% endblock %}
+
+{% block content %}
+
+<div class="tk-topbar">
+  <div>
+    <div class="tk-page-title">Meu perfil</div>
+    <div class="tk-page-subtitle">Suas informações pessoais</div>
+  </div>
+</div>
+
+<div class="row g-4">
+
+  {# ── Formulário principal ── #}
+  <div class="col-12 col-lg-7">
+    <div class="tk-card tk-card-glow-purple">
+
+      <div style="font-size:0.72rem; font-weight:800; letter-spacing:1px;
+                  text-transform:uppercase; color:var(--text-muted); margin-bottom:20px;">
+        Informações pessoais
+      </div>
+
+      <form method="POST" action="{{ url_for('junior.perfil') }}">
+
+        {# Nome (somente leitura — alterado pelo supervisor) #}
+        <div style="margin-bottom:16px;">
+          <label class="tk-label">Nome completo</label>
+          <input class="tk-input" type="text"
+                 value="{{ current_user.name }}" disabled
+                 style="opacity:0.6; cursor:not-allowed;" />
+          <div style="font-size:0.72rem; color:var(--text-muted); font-weight:600; margin-top:4px;">
+            Para alterar o nome fale com seu líder.
+          </div>
+        </div>
+
+        {# Data de nascimento #}
+        <div style="margin-bottom:16px;">
+          <label class="tk-label" for="data_nascimento">
+            Data de nascimento <span style="color:#fca5a5;">*</span>
+          </label>
+          <input class="tk-input" type="date" id="data_nascimento"
+                 name="data_nascimento"
+                 value="{{ current_user.data_nascimento.strftime('%Y-%m-%d') if current_user.data_nascimento else '' }}"
+                 required />
+        </div>
+
+        {# Separador família #}
+        <div style="display:flex; align-items:center; gap:12px; margin:20px 0 16px;">
+          <div style="flex:1; height:1px; background:var(--border);"></div>
+          <span style="font-size:0.7rem; color:var(--text-muted); font-weight:800;
+                       letter-spacing:1px; text-transform:uppercase; white-space:nowrap;">
+            Família
+          </span>
+          <div style="flex:1; height:1px; background:var(--border);"></div>
+        </div>
+
+        {# Nome do pai #}
+        <div style="margin-bottom:16px;">
+          <label class="tk-label" for="nome_pai">
+            Nome do pai <span style="color:#fca5a5;">*</span>
+          </label>
+          <input class="tk-input" type="text" id="nome_pai" name="nome_pai"
+                 value="{{ current_user.nome_pai or '' }}"
+                 placeholder="Ex: José Oliveira" required />
+        </div>
+
+        {# Nome da mãe #}
+        <div style="margin-bottom:16px;">
+          <label class="tk-label" for="nome_mae">
+            Nome da mãe <span style="color:#fca5a5;">*</span>
+          </label>
+          <input class="tk-input" type="text" id="nome_mae" name="nome_mae"
+                 value="{{ current_user.nome_mae or '' }}"
+                 placeholder="Ex: Maria Oliveira" required />
+        </div>
+
+        {# Responsável — opcional #}
+        <div style="margin-bottom:16px;">
+          <label class="tk-label" for="responsavel">
+            Responsável
+            <span style="color:var(--text-muted); font-weight:600;">(opcional — se diferente dos pais)</span>
+          </label>
+          <input class="tk-input" type="text" id="responsavel" name="responsavel"
+                 value="{{ current_user.responsavel or '' }}"
+                 placeholder="Ex: Avó Ana, Tio Carlos..." />
+        </div>
+
+        {# Separador saúde #}
+        <div style="display:flex; align-items:center; gap:12px; margin:20px 0 16px;">
+          <div style="flex:1; height:1px; background:var(--border);"></div>
+          <span style="font-size:0.7rem; color:var(--text-muted); font-weight:800;
+                       letter-spacing:1px; text-transform:uppercase; white-space:nowrap;">
+            Saúde
+          </span>
+          <div style="flex:1; height:1px; background:var(--border);"></div>
+        </div>
+
+        {# Alergias #}
+        <div style="margin-bottom:24px;">
+          <label class="tk-label" for="alergias">Alergias</label>
+          <textarea class="tk-input" id="alergias" name="alergias" rows="3"
+                    placeholder="Ex: Amendoim, Lactose, Dipirona... (deixe em branco se não houver)"
+                    style="resize:vertical;">{{ current_user.alergias or '' }}</textarea>
+          <div style="font-size:0.72rem; color:var(--text-muted); font-weight:600; margin-top:4px;">
+            <i class="bi bi-info-circle"></i>
+            Essa informação é importante para a segurança durante os encontros.
+          </div>
+        </div>
+
+        <button type="submit" class="tk-btn tk-btn-purple"
+                style="width:100%; justify-content:center; padding:13px;">
+          <i class="bi bi-check-lg"></i> Salvar informações
+        </button>
+
+      </form>
+    </div>
+  </div>
+
+  {# ── Painel lateral ── #}
+  <div class="col-12 col-lg-5">
+
+    {# Card de saldo #}
+    <div class="tk-card" style="border-color:rgba(249,115,22,0.25); margin-bottom:12px;">
+      <div style="font-size:0.7rem; font-weight:800; letter-spacing:1px;
+                  text-transform:uppercase; color:var(--text-muted); margin-bottom:10px;">
+        Meus Premiles
+      </div>
+      <div class="tk-premiles-lg">
+        ⭐ {{ current_user.balance.total_balance if current_user.balance else 0 }}
+      </div>
+      <div style="font-size:0.78rem; color:var(--text-muted); font-weight:600; margin-top:6px;">
+        <a href="{{ url_for('junior.extrato') }}"
+           style="color:#a78bfa; text-decoration:none; font-weight:700;">
+          Ver extrato completo →
+        </a>
+      </div>
+    </div>
+
+    {# Card de info da conta #}
+    <div class="tk-card" style="margin-bottom:12px;">
+      <div style="font-size:0.7rem; font-weight:800; letter-spacing:1px;
+                  text-transform:uppercase; color:var(--text-muted); margin-bottom:14px;">
+        Minha conta
+      </div>
+      <div style="display:flex; flex-direction:column; gap:10px;">
+
+        <div style="display:flex; justify-content:space-between; font-size:0.85rem;
+                    align-items:center;">
+          <span style="color:var(--text-muted); font-weight:600;">PGM</span>
+          <span style="font-weight:700;">
+            {{ current_user.pgm.name if current_user.pgm else '—' }}
+          </span>
+        </div>
+
+        {% if current_user.data_nascimento %}
+        <div style="display:flex; justify-content:space-between; font-size:0.85rem;
+                    align-items:center;">
+          <span style="color:var(--text-muted); font-weight:600;">Nascimento</span>
+          <span style="font-weight:700;">
+            {{ current_user.data_nascimento.strftime('%d/%m/%Y') }}
+          </span>
+        </div>
+        {% endif %}
+
+        {% if current_user.nome_pai %}
+        <div style="display:flex; justify-content:space-between; font-size:0.85rem;
+                    align-items:center; gap:10px;">
+          <span style="color:var(--text-muted); font-weight:600; flex-shrink:0;">Pai</span>
+          <span style="font-weight:700; text-align:right;">{{ current_user.nome_pai }}</span>
+        </div>
+        {% endif %}
+
+        {% if current_user.nome_mae %}
+        <div style="display:flex; justify-content:space-between; font-size:0.85rem;
+                    align-items:center; gap:10px;">
+          <span style="color:var(--text-muted); font-weight:600; flex-shrink:0;">Mãe</span>
+          <span style="font-weight:700; text-align:right;">{{ current_user.nome_mae }}</span>
+        </div>
+        {% endif %}
+
+        {% if current_user.responsavel %}
+        <div style="display:flex; justify-content:space-between; font-size:0.85rem;
+                    align-items:center; gap:10px;">
+          <span style="color:var(--text-muted); font-weight:600; flex-shrink:0;">Responsável</span>
+          <span style="font-weight:700; text-align:right;">{{ current_user.responsavel }}</span>
+        </div>
+        {% endif %}
+
+        {% if current_user.alergias %}
+        <div style="padding:10px 12px; background:rgba(239,68,68,0.08);
+                    border:1px solid rgba(239,68,68,0.2); border-radius:var(--radius-sm);
+                    margin-top:4px;">
+          <div style="font-size:0.7rem; font-weight:800; color:#fca5a5; margin-bottom:4px;">
+            <i class="bi bi-exclamation-triangle-fill"></i> Alergias
+          </div>
+          <div style="font-size:0.82rem; font-weight:600; color:var(--text-soft);">
+            {{ current_user.alergias }}
+          </div>
+        </div>
+        {% endif %}
+
+      </div>
+    </div>
+
+    {# Trocar senha #}
+    <div class="tk-card" style="border-color:rgba(6,182,212,0.2);">
+      <a href="{{ url_for('auth.trocar_senha') }}" class="tk-btn tk-btn-ghost"
+         style="width:100%; justify-content:center;">
+        <i class="bi bi-key-fill"></i> Trocar senha
+      </a>
+    </div>
+
+  </div>
+</div>
+
+{% endblock %}

@@ -22,15 +22,18 @@ class User(UserMixin, db.Model):
     role          = db.Column(db.Enum(UserRole), nullable=False, default=UserRole.JUNIOR)
     pgm_id        = db.Column(db.Integer, db.ForeignKey("pgms.id"), nullable=True)
 
-    # ── Travas de Segurança ──────────────────────────────────────────────────
-    failed_attempts = db.Column(db.Integer, default=0)
-    is_locked       = db.Column(db.Boolean, default=False)
-
-    # ── Recuperação de senha ─────────────────────────────────────────────────
+    # Recuperação de senha
     reset_token        = db.Column(db.String(64), nullable=True, unique=True, index=True)
     reset_token_expiry = db.Column(db.DateTime, nullable=True)
 
     created_at = db.Column(db.DateTime, server_default=db.func.now())
+
+    # ── Perfil do júnior ──────────────────────────────────────────────────────
+    data_nascimento = db.Column(db.Date, nullable=True)
+    nome_pai        = db.Column(db.String(120), nullable=True)
+    nome_mae        = db.Column(db.String(120), nullable=True)
+    responsavel     = db.Column(db.String(120), nullable=True)  # Opcional
+    alergias        = db.Column(db.Text, nullable=True)
 
     pgm            = db.relationship("PGM", back_populates="juniors", foreign_keys=[pgm_id])
     led_pgms       = db.relationship("PGMLeader", back_populates="leader",
