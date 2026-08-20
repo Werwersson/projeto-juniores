@@ -52,7 +52,8 @@ body {
 /* ── Sidebar ─────────────────────────────────────────── */
 .tk-sidebar {
   width: 240px;
-  min-height: 100vh;
+  height: 100vh;          /* altura fixa = viewport inteiro */
+  overflow: hidden;        /* impede que a sidebar cresça além da tela */
   background: var(--bg-card);
   border-right: 1px solid var(--border);
   display: flex;
