@@ -14,19 +14,19 @@
 </div>
 
 {# Filtro rápido por role #}
-<div style="display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap;">
-  <button class="tk-btn tk-btn-ghost tk-btn-sm filtro-btn active" data-role="todos">
+<div style="display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap;" id="filtros-role">
+  <button type="button" class="tk-btn tk-btn-ghost tk-btn-sm filtro-btn active" data-role="todos">
     Todos ({{ usuarios | length }})
   </button>
-  <button class="tk-btn tk-btn-ghost tk-btn-sm filtro-btn" data-role="supervisor">
+  <button type="button" class="tk-btn tk-btn-ghost tk-btn-sm filtro-btn" data-role="supervisor">
     <i class="bi bi-shield-fill"></i>
     Supervisores ({{ usuarios | selectattr('is_supervisor') | list | length }})
   </button>
-  <button class="tk-btn tk-btn-ghost tk-btn-sm filtro-btn" data-role="lider">
+  <button type="button" class="tk-btn tk-btn-ghost tk-btn-sm filtro-btn" data-role="lider">
     <i class="bi bi-star-fill"></i>
     Líderes ({{ usuarios | selectattr('is_lider') | list | length }})
   </button>
-  <button class="tk-btn tk-btn-ghost tk-btn-sm filtro-btn" data-role="junior">
+  <button type="button" class="tk-btn tk-btn-ghost tk-btn-sm filtro-btn" data-role="junior">
     <i class="bi bi-person-fill"></i>
     Juniores ({{ usuarios | selectattr('is_junior') | list | length }})
   </button>
@@ -132,43 +132,63 @@
   </div>
 </div>
 
-{% endblock %}
+{# ── Estilos do filtro ativo ── #}
+<style>
+  .filtro-btn.active {
+    border-color: var(--purple) !important;
+    color: #fff !important;
+    background: rgba(124,58,237,0.25) !important;
+  }
+</style>
 
-{% block scripts %}
+{# ── Script de filtro/busca (inline, após os elementos DOM) ── #}
 <script>
-document.addEventListener('DOMContentLoaded', function () {
-  let filtroAtivo = 'todos';
+(function() {
+  var filtroAtivo = 'todos';
+  var tabela      = document.getElementById('tabela-usuarios');
+  var buscaInput  = document.getElementById('busca-usuario');
+  var semRes      = document.getElementById('sem-resultados');
+
+  if (!tabela) return;                // segurança
 
   function aplicarFiltros() {
-    const busca = document.getElementById('busca-usuario').value.toLowerCase().trim();
-    const rows  = document.querySelectorAll('#tabela-usuarios tbody tr[data-role]');
-    let visiveis = 0;
+    var busca   = buscaInput ? buscaInput.value.toLowerCase().trim() : '';
+    var rows    = tabela.querySelectorAll('tbody tr[data-role]');
+    var visiveis = 0;
 
-    rows.forEach(function(row) {
-      const roleOk  = (filtroAtivo === 'todos' || row.dataset.role === filtroAtivo);
-      const nomeOk  = (busca === '' || row.dataset.nome.includes(busca));
-      const mostrar = roleOk && nomeOk;
+    for (var i = 0; i < rows.length; i++) {
+      var row     = rows[i];
+      var roleOk  = (filtroAtivo === 'todos' || row.getAttribute('data-role') === filtroAtivo);
+      var nomeOk  = (busca === '' || (row.getAttribute('data-nome') || '').indexOf(busca) !== -1);
+      var mostrar = roleOk && nomeOk;
       row.style.display = mostrar ? '' : 'none';
       if (mostrar) visiveis++;
-    });
+    }
 
-    const semRes = document.getElementById('sem-resultados');
-    if (semRes) semRes.style.display = visiveis === 0 ? '' : 'none';
+    if (semRes) semRes.style.display = (visiveis === 0) ? '' : 'none';
   }
 
-  // Filtro por role
-  document.querySelectorAll('.filtro-btn').forEach(function(btn) {
-    btn.addEventListener('click', function() {
-      document.querySelectorAll('.filtro-btn').forEach(function(b) { b.classList.remove('active'); });
-      btn.classList.add('active');
-      filtroAtivo = btn.dataset.role;
+  // Filtro por role — clique nos botões
+  var btns = document.querySelectorAll('.filtro-btn');
+  for (var j = 0; j < btns.length; j++) {
+    (function(btn) {
+      btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        for (var k = 0; k < btns.length; k++) btns[k].classList.remove('active');
+        btn.classList.add('active');
+        filtroAtivo = btn.getAttribute('data-role');
+        aplicarFiltros();
+      });
+    })(btns[j]);
+  }
+
+  // Busca por nome — digitar no input
+  if (buscaInput) {
+    buscaInput.addEventListener('input', function() {
       aplicarFiltros();
     });
-  });
-
-  // Busca por nome
-  const buscaInput = document.getElementById('busca-usuario');
-  if (buscaInput) buscaInput.addEventListener('input', aplicarFiltros);
-});
+  }
+})();
 </script>
+
 {% endblock %}
