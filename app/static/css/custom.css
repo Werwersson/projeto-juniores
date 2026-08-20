@@ -401,6 +401,7 @@ body {
   border: 1px solid var(--border);
 }
 .tk-btn-ghost:hover { border-color: var(--purple); color: var(--text); }
+.filtro-btn.active  { border-color: var(--purple); color: #fff; background: rgba(124,58,237,0.25); }
 
 .tk-btn-sm { padding: 6px 14px; font-size: 0.8rem; }
 

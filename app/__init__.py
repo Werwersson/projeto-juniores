@@ -34,7 +34,7 @@ def create_app(config_name="production"):
         response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
         response.headers["Content-Security-Policy"] = (
             "default-src 'self'; "
-            "script-src 'self' cdn.jsdelivr.net; "
+            "script-src 'self' 'unsafe-inline' cdn.jsdelivr.net; "
             "style-src 'self' cdn.jsdelivr.net fonts.googleapis.com 'unsafe-inline'; "
             "font-src 'self' cdn.jsdelivr.net fonts.gstatic.com; "
             "img-src 'self' data:; "
