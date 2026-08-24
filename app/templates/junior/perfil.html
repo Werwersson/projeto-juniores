@@ -34,6 +34,38 @@
           </div>
         </div>
 
+        {# Nome completo #}
+        <div style="margin-bottom:16px;">
+          <label class="tk-label" for="nome_completo">
+            Nome completo <span style="color:#fca5a5;">*</span>
+          </label>
+          <input class="tk-input" type="text" id="nome_completo" name="nome_completo"
+                 value="{{ current_user.nome_completo or '' }}"
+                 placeholder="Ex: Maria Aparecida Oliveira Santos" required />
+        </div>
+
+        {# WhatsApp #}
+        <div style="margin-bottom:16px;">
+          <label class="tk-label" for="whatsapp">
+            WhatsApp <span style="color:#fca5a5;">*</span>
+          </label>
+          <div style="position:relative;">
+            <span style="position:absolute; left:14px; top:50%; transform:translateY(-50%);
+                         color:var(--text-muted); font-weight:700; font-size:0.85rem;">
+              🇧🇷 +55
+            </span>
+            <input class="tk-input" type="tel" id="whatsapp" name="whatsapp"
+                   value="{{ current_user.whatsapp or '' }}"
+                   placeholder="(11) 99999-9999"
+                   style="padding-left:68px;"
+                   oninput="mascaraTel(this)"
+                   required />
+          </div>
+          <div style="font-size:0.72rem; color:var(--text-muted); font-weight:600; margin-top:4px;">
+            Número do responsável ou da própria criança para contato.
+          </div>
+        </div>
+
         {# Data de nascimento #}
         <div style="margin-bottom:16px;">
           <label class="tk-label" for="data_nascimento">
@@ -153,6 +185,26 @@
           </span>
         </div>
 
+        {% if current_user.nome_completo %}
+        <div style="display:flex; justify-content:space-between; font-size:0.85rem;
+                    align-items:center; gap:10px;">
+          <span style="color:var(--text-muted); font-weight:600; flex-shrink:0;">Nome</span>
+          <span style="font-weight:700; text-align:right;">{{ current_user.nome_completo }}</span>
+        </div>
+        {% endif %}
+
+        {% if current_user.whatsapp %}
+        <div style="display:flex; justify-content:space-between; font-size:0.85rem;
+                    align-items:center; gap:10px;">
+          <span style="color:var(--text-muted); font-weight:600; flex-shrink:0;">WhatsApp</span>
+          <a href="https://wa.me/55{{ current_user.whatsapp | replace('(','') | replace(')','') | replace(' ','') | replace('-','') }}"
+             target="_blank"
+             style="font-weight:700; color:#6ee7b7; text-decoration:none;">
+            <i class="bi bi-whatsapp"></i> {{ current_user.whatsapp }}
+          </a>
+        </div>
+        {% endif %}
+
         {% if current_user.data_nascimento %}
         <div style="display:flex; justify-content:space-between; font-size:0.85rem;
                     align-items:center;">
@@ -214,4 +266,21 @@
   </div>
 </div>
 
+{% block scripts %}
+<script>
+function mascaraTel(input) {
+  var v = input.value.replace(/\D/g, '').slice(0, 11);
+  if (v.length <= 10) {
+    v = v.replace(/^(\d{2})(\d{4})(\d{0,4})/, '($1) $2-$3');
+  } else {
+    v = v.replace(/^(\d{2})(\d{5})(\d{0,4})/, '($1) $2-$3');
+  }
+  input.value = v;
+}
+// Aplica máscara ao carregar se já houver valor
+document.addEventListener('DOMContentLoaded', function() {
+  var tel = document.getElementById('whatsapp');
+  if (tel && tel.value) mascaraTel(tel);
+});
+</script>
 {% endblock %}

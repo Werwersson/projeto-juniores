@@ -3,6 +3,145 @@
 
 {% block content %}
 
+<style>
+  /* ── Estilos para atividades inativas ── */
+  .act-row-inactive {
+    opacity: 0.5;
+    position: relative;
+  }
+  .act-row-inactive .tk-input {
+    text-decoration: line-through;
+    color: var(--text-muted) !important;
+  }
+  .act-badge-inativa {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.65rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 2px 8px;
+    border-radius: 6px;
+    background: rgba(239,68,68,0.15);
+    color: #fca5a5;
+    border: 1px solid rgba(239,68,68,0.25);
+  }
+  .act-badge-ativa {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.65rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 2px 8px;
+    border-radius: 6px;
+    background: rgba(16,185,129,0.12);
+    color: #6ee7b7;
+    border: 1px solid rgba(16,185,129,0.25);
+  }
+
+  /* ── Modal de confirmação ── */
+  .toggle-modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(4px);
+    z-index: 9999;
+    align-items: center;
+    justify-content: center;
+  }
+  .toggle-modal-overlay.show {
+    display: flex;
+    animation: fadeIn 0.2s ease;
+  }
+  .toggle-modal-box {
+    background: var(--card-bg, #1a1a2e);
+    border: 1px solid var(--border, #2a2a3e);
+    border-radius: 16px;
+    padding: 28px 32px;
+    max-width: 420px;
+    width: 90%;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  }
+  .toggle-modal-icon {
+    font-size: 2.5rem;
+    margin-bottom: 12px;
+  }
+  .toggle-modal-title {
+    font-size: 1.05rem;
+    font-weight: 800;
+    margin-bottom: 8px;
+  }
+  .toggle-modal-desc {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    font-weight: 600;
+    margin-bottom: 24px;
+    line-height: 1.5;
+  }
+  .toggle-modal-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+  }
+  .toggle-modal-actions .tk-btn {
+    min-width: 120px;
+    justify-content: center;
+  }
+
+  /* ── Toast de confirmação visual ── */
+  .toggle-toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 20px;
+    border-radius: 12px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    transform: translateY(100px);
+    opacity: 0;
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    pointer-events: none;
+  }
+  .toggle-toast.show {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  .toggle-toast.toast-success {
+    background: rgba(16,185,129,0.15);
+    color: #6ee7b7;
+    border: 1px solid rgba(16,185,129,0.3);
+  }
+  .toggle-toast.toast-warning {
+    background: rgba(239,68,68,0.15);
+    color: #fca5a5;
+    border: 1px solid rgba(239,68,68,0.3);
+  }
+
+  /* ── Animação do toggle ── */
+  .act-row-toggling {
+    transition: all 0.4s ease;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+  @keyframes slideUp {
+    from { transform: translateY(20px); opacity: 0; }
+    to   { transform: translateY(0); opacity: 1; }
+  }
+</style>
+
 <div class="tk-topbar">
   <div>
     <div class="tk-page-title">Configuração de atividades</div>
@@ -78,48 +217,63 @@
       </div>
 
       {% for act in junior_acts %}
-      <form method="POST" action="{{ url_for('supervisor.editar_atividade', act_id=act.id) }}"
-            style="display:flex; align-items:center; gap:10px; padding:10px 0;
-                   border-bottom:1px solid var(--border); flex-wrap:wrap;"
-            id="form-act-{{ act.id }}">
+      <div class="act-row-toggling {{ 'act-row-inactive' if not act.is_active }}"
+           id="act-row-{{ act.id }}"
+           style="display:flex; align-items:center; gap:10px; padding:10px 0;
+                  border-bottom:1px solid var(--border); flex-wrap:wrap;">
 
-        <div style="flex:1; min-width:160px;">
-          <input class="tk-input" type="text" name="name" value="{{ act.name }}"
-                 style="font-size:0.88rem; padding:7px 12px;"
-                 {% if not act.is_active %}style="opacity:0.5;"{% endif %} />
-        </div>
+        {# ── Formulário de edição ── #}
+        <form method="POST" action="{{ url_for('supervisor.editar_atividade', act_id=act.id) }}"
+              style="display:flex; align-items:center; gap:10px; flex:1; flex-wrap:wrap; min-width:0;">
 
-        <div style="display:flex; align-items:center; gap:6px;">
-          <input class="tk-input" type="number" name="default_premiles"
-                 value="{{ act.default_premiles }}" min="1" max="500"
-                 style="width:72px; font-size:0.88rem; padding:7px 10px; text-align:center;" />
-          <span style="font-size:0.72rem; color:var(--text-muted); font-weight:700;">pts</span>
-        </div>
+          <div style="flex:1; min-width:160px;">
+            <input class="tk-input" type="text" name="name" value="{{ act.name }}"
+                   style="font-size:0.88rem; padding:7px 12px;" />
+          </div>
 
-        <label style="display:flex; align-items:center; gap:6px; cursor:pointer;
-                      font-size:0.78rem; font-weight:700; color:var(--text-muted);">
-          <input type="checkbox" name="requires_summary"
-                 {% if act.requires_summary %}checked{% endif %}
-                 style="accent-color:var(--purple); width:14px; height:14px;" />
-          resumo
-        </label>
+          <div style="display:flex; align-items:center; gap:6px;">
+            <input class="tk-input" type="number" name="default_premiles"
+                   value="{{ act.default_premiles }}" min="1" max="500"
+                   style="width:72px; font-size:0.88rem; padding:7px 10px; text-align:center;" />
+            <span style="font-size:0.72rem; color:var(--text-muted); font-weight:700;">pts</span>
+          </div>
 
-        <div style="display:flex; gap:6px;">
+          <label style="display:flex; align-items:center; gap:6px; cursor:pointer;
+                        font-size:0.78rem; font-weight:700; color:var(--text-muted);">
+            <input type="checkbox" name="requires_summary"
+                   {% if act.requires_summary %}checked{% endif %}
+                   style="accent-color:var(--purple); width:14px; height:14px;" />
+            resumo
+          </label>
+
           <button type="submit" class="tk-btn tk-btn-ghost tk-btn-sm" title="Salvar">
             <i class="bi bi-check-lg"></i>
           </button>
-        </div>
-
-        {# Toggle ativo/inativo (form separado) #}
-        <form method="POST" action="{{ url_for('supervisor.toggle_atividade', act_id=act.id) }}">
-          <button type="submit" class="tk-btn tk-btn-sm"
-                  style="{% if act.is_active %}background:rgba(16,185,129,0.1);color:#6ee7b7;border:1px solid rgba(16,185,129,0.3);{% else %}background:rgba(239,68,68,0.1);color:#fca5a5;border:1px solid rgba(239,68,68,0.2);{% endif %}"
-                  title="{{ 'Desativar' if act.is_active else 'Ativar' }}">
-            <i class="bi bi-{% if act.is_active %}toggle-on{% else %}toggle-off{% endif %}"></i>
-          </button>
         </form>
 
-      </form>
+        {# ── Badge de status ── #}
+        {% if not act.is_active %}
+        <span class="act-badge-inativa"><i class="bi bi-x-circle"></i> Inativa</span>
+        {% else %}
+        <span class="act-badge-ativa"><i class="bi bi-check-circle"></i> Ativa</span>
+        {% endif %}
+
+        {# ── Toggle ativo/inativo (form separado, FORA do form de edição) ── #}
+        <form method="POST"
+              action="{{ url_for('supervisor.toggle_atividade', act_id=act.id) }}"
+              class="toggle-form"
+              data-act-name="{{ act.name }}"
+              data-act-active="{{ 'true' if act.is_active else 'false' }}"
+              data-act-id="{{ act.id }}">
+          <button type="button" class="tk-btn tk-btn-sm toggle-btn"
+                  style="{% if act.is_active %}background:rgba(16,185,129,0.1);color:#6ee7b7;border:1px solid rgba(16,185,129,0.3);{% else %}background:rgba(239,68,68,0.1);color:#fca5a5;border:1px solid rgba(239,68,68,0.2);{% endif %}"
+                  title="{{ 'Desativar' if act.is_active else 'Ativar' }}"
+                  onclick="handleToggle(this)">
+            <i class="bi bi-{% if act.is_active %}toggle-on{% else %}toggle-off{% endif %}"
+               style="font-size:1.1rem;"></i>
+          </button>
+        </form>
+      </div>
       {% else %}
       <div style="color:var(--text-muted); font-size:0.85rem; font-weight:600; padding:16px 0;">
         Nenhuma atividade de checklist cadastrada.
@@ -137,37 +291,55 @@
       </div>
 
       {% for act in leader_acts %}
-      <form method="POST" action="{{ url_for('supervisor.editar_atividade', act_id=act.id) }}"
-            style="display:flex; align-items:center; gap:10px; padding:10px 0;
-                   border-bottom:1px solid var(--border); flex-wrap:wrap;">
+      <div class="act-row-toggling {{ 'act-row-inactive' if not act.is_active }}"
+           id="act-row-{{ act.id }}"
+           style="display:flex; align-items:center; gap:10px; padding:10px 0;
+                  border-bottom:1px solid var(--border); flex-wrap:wrap;">
 
-        <div style="flex:1; min-width:160px;">
-          <input class="tk-input" type="text" name="name" value="{{ act.name }}"
-                 style="font-size:0.88rem; padding:7px 12px;" />
-        </div>
+        {# ── Formulário de edição ── #}
+        <form method="POST" action="{{ url_for('supervisor.editar_atividade', act_id=act.id) }}"
+              style="display:flex; align-items:center; gap:10px; flex:1; flex-wrap:wrap; min-width:0;">
 
-        <div style="display:flex; align-items:center; gap:6px;">
-          <input class="tk-input" type="number" name="default_premiles"
-                 value="{{ act.default_premiles }}" min="1" max="500"
-                 style="width:72px; font-size:0.88rem; padding:7px 10px; text-align:center;" />
-          <span style="font-size:0.72rem; color:var(--text-muted); font-weight:700;">pts</span>
-        </div>
+          <div style="flex:1; min-width:160px;">
+            <input class="tk-input" type="text" name="name" value="{{ act.name }}"
+                   style="font-size:0.88rem; padding:7px 12px;" />
+          </div>
 
-        <div style="display:flex; gap:6px;">
+          <div style="display:flex; align-items:center; gap:6px;">
+            <input class="tk-input" type="number" name="default_premiles"
+                   value="{{ act.default_premiles }}" min="1" max="500"
+                   style="width:72px; font-size:0.88rem; padding:7px 10px; text-align:center;" />
+            <span style="font-size:0.72rem; color:var(--text-muted); font-weight:700;">pts</span>
+          </div>
+
           <button type="submit" class="tk-btn tk-btn-ghost tk-btn-sm" title="Salvar">
             <i class="bi bi-check-lg"></i>
           </button>
-        </div>
-
-        <form method="POST" action="{{ url_for('supervisor.toggle_atividade', act_id=act.id) }}">
-          <button type="submit" class="tk-btn tk-btn-sm"
-                  style="{% if act.is_active %}background:rgba(16,185,129,0.1);color:#6ee7b7;border:1px solid rgba(16,185,129,0.3);{% else %}background:rgba(239,68,68,0.1);color:#fca5a5;border:1px solid rgba(239,68,68,0.2);{% endif %}"
-                  title="{{ 'Desativar' if act.is_active else 'Ativar' }}">
-            <i class="bi bi-{% if act.is_active %}toggle-on{% else %}toggle-off{% endif %}"></i>
-          </button>
         </form>
 
-      </form>
+        {# ── Badge de status ── #}
+        {% if not act.is_active %}
+        <span class="act-badge-inativa"><i class="bi bi-x-circle"></i> Inativa</span>
+        {% else %}
+        <span class="act-badge-ativa"><i class="bi bi-check-circle"></i> Ativa</span>
+        {% endif %}
+
+        {# ── Toggle ativo/inativo (form separado, FORA do form de edição) ── #}
+        <form method="POST"
+              action="{{ url_for('supervisor.toggle_atividade', act_id=act.id) }}"
+              class="toggle-form"
+              data-act-name="{{ act.name }}"
+              data-act-active="{{ 'true' if act.is_active else 'false' }}"
+              data-act-id="{{ act.id }}">
+          <button type="button" class="tk-btn tk-btn-sm toggle-btn"
+                  style="{% if act.is_active %}background:rgba(16,185,129,0.1);color:#6ee7b7;border:1px solid rgba(16,185,129,0.3);{% else %}background:rgba(239,68,68,0.1);color:#fca5a5;border:1px solid rgba(239,68,68,0.2);{% endif %}"
+                  title="{{ 'Desativar' if act.is_active else 'Ativar' }}"
+                  onclick="handleToggle(this)">
+            <i class="bi bi-{% if act.is_active %}toggle-on{% else %}toggle-off{% endif %}"
+               style="font-size:1.1rem;"></i>
+          </button>
+        </form>
+      </div>
       {% else %}
       <div style="color:var(--text-muted); font-size:0.85rem; font-weight:600; padding:16px 0;">
         Nenhuma atividade de lançamento cadastrada.
@@ -175,6 +347,25 @@
       {% endfor %}
     </div>
 
+  </div>
+</div>
+
+{# ── Modal de confirmação ── #}
+<div class="toggle-modal-overlay" id="toggleModal">
+  <div class="toggle-modal-box">
+    <div class="toggle-modal-icon" id="modalIcon"></div>
+    <div class="toggle-modal-title" id="modalTitle"></div>
+    <div class="toggle-modal-desc" id="modalDesc"></div>
+    <div class="toggle-modal-actions">
+      <button type="button" class="tk-btn tk-btn-ghost tk-btn-sm"
+              onclick="closeToggleModal()" style="min-width:120px; justify-content:center;">
+        <i class="bi bi-x-lg"></i> Cancelar
+      </button>
+      <button type="button" class="tk-btn tk-btn-sm" id="modalConfirmBtn"
+              style="min-width:120px; justify-content:center;">
+        <i class="bi bi-check-lg"></i> <span id="modalConfirmText">Confirmar</span>
+      </button>
+    </div>
   </div>
 </div>
 
@@ -186,5 +377,64 @@ function toggleSummary(val) {
   document.getElementById('campo-resumo').style.display =
     val === 'junior' ? 'block' : 'none';
 }
+
+var pendingForm = null;
+
+function handleToggle(btn) {
+  var form = btn.closest('.toggle-form');
+  var actName   = form.dataset.actName;
+  var isActive  = form.dataset.actActive === 'true';
+
+  var modal     = document.getElementById('toggleModal');
+  var icon      = document.getElementById('modalIcon');
+  var title     = document.getElementById('modalTitle');
+  var desc      = document.getElementById('modalDesc');
+  var confirmBtn = document.getElementById('modalConfirmBtn');
+  var confirmText = document.getElementById('modalConfirmText');
+
+  if (isActive) {
+    // Desativar — exige confirmação
+    icon.textContent = '⚠️';
+    title.textContent = 'Desativar "' + actName + '"?';
+    desc.innerHTML = 'A atividade ficará <strong>inativa</strong> e não aparecerá mais para as crianças e líderes.<br>Você pode reativá-la a qualquer momento.';
+    confirmBtn.style.background = 'rgba(239,68,68,0.2)';
+    confirmBtn.style.color = '#fca5a5';
+    confirmBtn.style.border = '1px solid rgba(239,68,68,0.3)';
+    confirmText.textContent = 'Desativar';
+
+    pendingForm = form;
+    modal.classList.add('show');
+  } else {
+    // Reativar — submete direto (sem confirmação)
+    form.submit();
+  }
+}
+
+function closeToggleModal() {
+  document.getElementById('toggleModal').classList.remove('show');
+  pendingForm = null;
+}
+
+// Botão de confirmar no modal
+document.getElementById('modalConfirmBtn').addEventListener('click', function() {
+  if (pendingForm) {
+    pendingForm.submit();
+  }
+  closeToggleModal();
+});
+
+// Fechar ao clicar fora do modal
+document.getElementById('toggleModal').addEventListener('click', function(e) {
+  if (e.target === this) {
+    closeToggleModal();
+  }
+});
+
+// Fechar com Escape
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    closeToggleModal();
+  }
+});
 </script>
 {% endblock %}

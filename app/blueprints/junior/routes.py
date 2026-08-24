@@ -165,6 +165,8 @@ def perfil():
     from datetime import date as date_type
 
     if request.method == "POST":
+        nome_completo   = request.form.get("nome_completo", "").strip() or None
+        whatsapp        = request.form.get("whatsapp", "").strip() or None
         nome_pai        = request.form.get("nome_pai", "").strip() or None
         nome_mae        = request.form.get("nome_mae", "").strip() or None
         responsavel     = request.form.get("responsavel", "").strip() or None
@@ -179,6 +181,8 @@ def perfil():
                 flash("Data de nascimento inválida.", "danger")
                 return render_template("junior/perfil.html")
 
+        current_user.nome_completo   = nome_completo
+        current_user.whatsapp        = whatsapp
         current_user.nome_pai        = nome_pai
         current_user.nome_mae        = nome_mae
         current_user.responsavel     = responsavel
