@@ -30,12 +30,25 @@ class User(UserMixin, db.Model):
 
     # ── Perfil do júnior ──────────────────────────────────────────────────────
     nome_completo   = db.Column(db.String(180), nullable=True)
-    whatsapp        = db.Column(db.String(20),  nullable=True)
+    sexo            = db.Column(db.String(20), nullable=True)
     data_nascimento = db.Column(db.Date, nullable=True)
+    email_contato   = db.Column(db.String(120), nullable=True)
+    whatsapp        = db.Column(db.String(20),  nullable=True)
+    celular         = db.Column(db.String(20), nullable=True)
+    naturalidade    = db.Column(db.String(120), nullable=True)
+    cpf             = db.Column(db.String(14), nullable=True, unique=True, index=True)
     nome_pai        = db.Column(db.String(120), nullable=True)
     nome_mae        = db.Column(db.String(120), nullable=True)
     responsavel     = db.Column(db.String(120), nullable=True)  # Opcional
     alergias        = db.Column(db.Text, nullable=True)
+
+    # ── Endereço ─────────────────────────────────────────────────────────────
+    endereco_rua    = db.Column(db.String(200), nullable=True)
+    endereco_numero = db.Column(db.String(20), nullable=True)
+    endereco_bairro = db.Column(db.String(100), nullable=True)
+    endereco_cidade = db.Column(db.String(100), nullable=True)
+    endereco_estado = db.Column(db.String(2), nullable=True)
+    endereco_cep    = db.Column(db.String(10), nullable=True)
 
     pgm            = db.relationship("PGM", back_populates="juniors", foreign_keys=[pgm_id])
     led_pgms       = db.relationship("PGMLeader", back_populates="leader",

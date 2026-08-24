@@ -2,7 +2,7 @@ from flask import render_template, request, flash, redirect, url_for
 from flask_login import login_required, current_user
 from app.blueprints.junior import junior_bp
 from app.decorators import requires_role
-from app.models.user import UserRole
+from app.models.user import UserRole, User
 from app.models.audit import log as audit_log, LogAction
 from app.models.activity import (ActivityType, ActivitySource, ChecklistLog,
                                   ManualLog, PremilesBalance, SummaryStatus)
@@ -158,6 +158,36 @@ def extrato():
 
 # ── Perfil do júnior ──────────────────────────────────────────────────────────
 
+def _validar_cpf(cpf: str) -> bool:
+    """Valida CPF (formato xxx.xxx.xxx-xx e dígitos verificadores)."""
+    import re
+    cpf_limpo = re.sub(r'\D', '', cpf)
+    if len(cpf_limpo) != 11:
+        return False
+    if cpf_limpo == cpf_limpo[0] * 11:
+        return False
+    soma = sum(int(cpf_limpo[i]) * (10 - i) for i in range(9))
+    resto = (soma * 10) % 11
+    if resto == 10:
+        resto = 0
+    if resto != int(cpf_limpo[9]):
+        return False
+    soma = sum(int(cpf_limpo[i]) * (11 - i) for i in range(10))
+    resto = (soma * 10) % 11
+    if resto == 10:
+        resto = 0
+    if resto != int(cpf_limpo[10]):
+        return False
+    return True
+
+
+ESTADOS_VALIDOS = {
+    'AC','AL','AP','AM','BA','CE','DF','ES','GO','MA',
+    'MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN',
+    'RS','RO','RR','SC','SP','SE','TO',
+}
+
+
 @junior_bp.route("/perfil", methods=["GET", "POST"])
 @login_required
 @requires_role(UserRole.JUNIOR)
@@ -165,13 +195,54 @@ def perfil():
     from datetime import date as date_type
 
     if request.method == "POST":
+        # ── Campos pessoais ──────────────────────────────────────────────
         nome_completo   = request.form.get("nome_completo", "").strip() or None
+        sexo            = request.form.get("sexo", "").strip() or None
+        nasc_str        = request.form.get("data_nascimento", "").strip()
+        celular         = request.form.get("celular", "").strip() or None
+        naturalidade    = request.form.get("naturalidade", "").strip() or None
+        cpf             = request.form.get("cpf", "").strip() or None
+
+        # ── Endereço ─────────────────────────────────────────────────────
+        endereco_cep    = request.form.get("endereco_cep", "").strip() or None
+        endereco_rua    = request.form.get("endereco_rua", "").strip() or None
+        endereco_numero = request.form.get("endereco_numero", "").strip() or None
+        endereco_bairro = request.form.get("endereco_bairro", "").strip() or None
+        endereco_cidade = request.form.get("endereco_cidade", "").strip() or None
+        endereco_estado = request.form.get("endereco_estado", "").strip().upper() or None
+
+        # ── Família / Saúde ──────────────────────────────────────────────
         whatsapp        = request.form.get("whatsapp", "").strip() or None
         nome_pai        = request.form.get("nome_pai", "").strip() or None
         nome_mae        = request.form.get("nome_mae", "").strip() or None
         responsavel     = request.form.get("responsavel", "").strip() or None
         alergias        = request.form.get("alergias", "").strip() or None
-        nasc_str        = request.form.get("data_nascimento", "").strip()
+
+        # ── Validações ───────────────────────────────────────────────────
+        campos_obrigatorios = {
+            "Nome completo": nome_completo,
+            "Sexo": sexo,
+            "Data de nascimento": nasc_str,
+            "Celular": celular,
+            "Naturalidade": naturalidade,
+            "CPF": cpf,
+            "CEP": endereco_cep,
+            "Rua": endereco_rua,
+            "Número": endereco_numero,
+            "Bairro": endereco_bairro,
+            "Cidade": endereco_cidade,
+            "Estado": endereco_estado,
+            "Nome do pai": nome_pai,
+            "Nome da mãe": nome_mae,
+        }
+        faltando = [nome for nome, valor in campos_obrigatorios.items() if not valor]
+        if faltando:
+            flash(f"Preencha os campos obrigatórios: {', '.join(faltando)}.", "danger")
+            return render_template("junior/perfil.html")
+
+        if sexo not in ("Masculino", "Feminino"):
+            flash("Sexo inválido.", "danger")
+            return render_template("junior/perfil.html")
 
         data_nascimento = None
         if nasc_str:
@@ -181,16 +252,49 @@ def perfil():
                 flash("Data de nascimento inválida.", "danger")
                 return render_template("junior/perfil.html")
 
+        if cpf and not _validar_cpf(cpf):
+            flash("CPF inválido. Verifique os números digitados.", "danger")
+            return render_template("junior/perfil.html")
+
+        if endereco_estado and endereco_estado not in ESTADOS_VALIDOS:
+            flash("Estado (UF) inválido.", "danger")
+            return render_template("junior/perfil.html")
+
+        # ── Verificar duplicidade de CPF ─────────────────────────────────
+        if cpf:
+            import re
+            cpf_limpo = re.sub(r'\D', '', cpf)
+            cpf_formatado = f"{cpf_limpo[:3]}.{cpf_limpo[3:6]}.{cpf_limpo[6:9]}-{cpf_limpo[9:]}"
+            existente = db.session.execute(
+                db.select(User).where(User.cpf == cpf_formatado, User.id != current_user.id)
+            ).scalar_one_or_none()
+            if existente:
+                flash("Este CPF já está cadastrado por outro usuário.", "danger")
+                return render_template("junior/perfil.html")
+            cpf = cpf_formatado
+
+        # ── Salvar ───────────────────────────────────────────────────────
         current_user.nome_completo   = nome_completo
+        current_user.sexo            = sexo
+        current_user.data_nascimento = data_nascimento
+        current_user.celular         = celular
+        current_user.naturalidade    = naturalidade
+        current_user.cpf             = cpf
+        current_user.endereco_cep    = endereco_cep
+        current_user.endereco_rua    = endereco_rua
+        current_user.endereco_numero = endereco_numero
+        current_user.endereco_bairro = endereco_bairro
+        current_user.endereco_cidade = endereco_cidade
+        current_user.endereco_estado = endereco_estado
         current_user.whatsapp        = whatsapp
         current_user.nome_pai        = nome_pai
         current_user.nome_mae        = nome_mae
         current_user.responsavel     = responsavel
         current_user.alergias        = alergias
-        current_user.data_nascimento = data_nascimento
 
         db.session.commit()
         flash("Perfil atualizado com sucesso! ✅", "success")
         return redirect(url_for("junior.perfil"))
 
     return render_template("junior/perfil.html")
+
