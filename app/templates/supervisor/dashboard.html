@@ -152,8 +152,42 @@
   <div class="col-12 col-md-4">
     <div class="tk-pgm-card">
       <div class="tk-pgm-header">
-        <div>
-          <div class="tk-pgm-name">{{ pgm.name }}</div>
+        <div style="flex:1; min-width:0;">
+          {# ── Nome exibição (clicável para editar) ── #}
+          <div id="pgm-display-{{ pgm.id }}" style="display:flex; align-items:center; gap:8px;">
+            <div class="tk-pgm-name" style="flex:1; min-width:0;">{{ pgm.name }}</div>
+            <button type="button" class="tk-btn tk-btn-ghost tk-btn-sm"
+                    title="Renomear PGM"
+                    onclick="showPgmEdit({{ pgm.id }})"
+                    style="flex-shrink:0; padding:4px 6px;">
+              <i class="bi bi-pencil-fill" style="font-size:0.72rem;"></i>
+            </button>
+          </div>
+          {# ── Form inline de edição (oculto) ── #}
+          <form method="POST"
+                action="{{ url_for('supervisor.renomear_pgm', pgm_id=pgm.id) }}"
+                id="pgm-edit-{{ pgm.id }}"
+                style="display:none;"
+                onsubmit="return validarNomePgm(this)">
+            <div style="display:flex; align-items:center; gap:6px;">
+              <input class="tk-input" type="text" name="name"
+                     value="{{ pgm.name }}" required
+                     id="pgm-input-{{ pgm.id }}"
+                     style="font-size:0.88rem; padding:5px 10px; font-weight:700;" />
+              <button type="submit" class="tk-btn tk-btn-sm"
+                      style="background:rgba(16,185,129,0.12); color:#6ee7b7;
+                             border:1px solid rgba(16,185,129,0.25); padding:5px 8px;"
+                      title="Salvar">
+                <i class="bi bi-check-lg"></i>
+              </button>
+              <button type="button" class="tk-btn tk-btn-ghost tk-btn-sm"
+                      onclick="hidePgmEdit({{ pgm.id }})"
+                      style="padding:5px 8px;"
+                      title="Cancelar">
+                <i class="bi bi-x-lg"></i>
+              </button>
+            </div>
+          </form>
           <div style="font-size:0.72rem; color:var(--text-muted); font-weight:600; margin-top:2px;">
             {{ pgm.juniors | length }} júnior{{ 'es' if pgm.juniors | length != 1 else '' }}
           </div>
@@ -315,7 +349,36 @@ document.getElementById('modal-zerar').addEventListener('click', function(e) {
 document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape') {
     document.getElementById('modal-zerar').style.display = 'none';
+    // Fecha qualquer edição inline de PGM aberta
+    document.querySelectorAll('[id^="pgm-edit-"]').forEach(function(el) {
+      var id = el.id.replace('pgm-edit-', '');
+      hidePgmEdit(id);
+    });
   }
 });
+
+// ── Edição inline de nome do PGM ──
+function showPgmEdit(pgmId) {
+  document.getElementById('pgm-display-' + pgmId).style.display = 'none';
+  document.getElementById('pgm-edit-' + pgmId).style.display = 'block';
+  var input = document.getElementById('pgm-input-' + pgmId);
+  input.focus();
+  input.select();
+}
+
+function hidePgmEdit(pgmId) {
+  document.getElementById('pgm-edit-' + pgmId).style.display = 'none';
+  document.getElementById('pgm-display-' + pgmId).style.display = 'flex';
+}
+
+function validarNomePgm(form) {
+  var input = form.querySelector('input[name="name"]');
+  if (!input.value.trim()) {
+    input.style.borderColor = 'rgba(239,68,68,0.5)';
+    input.focus();
+    return false;
+  }
+  return true;
+}
 </script>
 {% endblock %}

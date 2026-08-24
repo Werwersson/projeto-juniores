@@ -57,6 +57,30 @@ def junior_detail(junior_id):
     return render_template("supervisor/junior_detail.html", junior=junior)
 
 
+@supervisor_bp.route("/pgm/<int:pgm_id>/renomear", methods=["POST"])
+@login_required
+@requires_role(UserRole.SUPERVISOR)
+def renomear_pgm(pgm_id):
+    pgm = db.get_or_404(PGM, pgm_id)
+    novo_nome = request.form.get("name", "").strip()
+
+    if not novo_nome:
+        flash("O nome do PGM não pode ficar vazio.", "danger")
+        return redirect(url_for("supervisor.dashboard"))
+
+    nome_antigo = pgm.name
+    if novo_nome == nome_antigo:
+        return redirect(url_for("supervisor.dashboard"))
+
+    pgm.name = novo_nome
+    audit_log(LogAction.PGM_RENOMEADO,
+              f'PGM renomeado de "{nome_antigo}" para "{novo_nome}"',
+              actor=current_user)
+    db.session.commit()
+    flash(f'PGM renomeado para "{novo_nome}".', "success")
+    return redirect(url_for("supervisor.dashboard"))
+
+
 # ── CRUD de Usuários ──────────────────────────────────────────────────────────
 
 @supervisor_bp.route("/usuarios")
