@@ -19,17 +19,49 @@
 <div class="tk-card mb-4">
 
   {# Cabeçalho do PGM com renomear inline #}
-  <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px;">
-    <div>
+  <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; gap:10px;">
+
+    {# ── Nome exibição ── #}
+    <div id="pgm-display-{{ pgm.id }}"
+         style="display:flex; align-items:center; gap:10px; flex:1; min-width:0;">
       <span style="font-size:1.1rem; font-weight:900;">{{ pgm.name }}</span>
-      <span style="font-size:0.75rem; color:var(--text-muted); font-weight:600; margin-left:10px;">
+      <span style="font-size:0.75rem; color:var(--text-muted); font-weight:600;">
         {{ pgm.juniors | length }} juniores
       </span>
     </div>
-    {# Botão para abrir modal de renomear #}
+
+    {# ── Form inline de edição (oculto) ── #}
+    <form method="POST"
+          action="{{ url_for('lider.renomear_pgm', pgm_id=pgm.id) }}"
+          id="pgm-edit-{{ pgm.id }}"
+          style="display:none; flex:1; min-width:0;"
+          onsubmit="return validarNomePgm(this)">
+      <div style="display:flex; align-items:center; gap:6px;">
+        <input class="tk-input" type="text" name="nome"
+               value="{{ pgm.name }}" required
+               id="pgm-input-{{ pgm.id }}"
+               placeholder="Novo nome do PGM"
+               style="font-size:0.95rem; padding:6px 12px; font-weight:700; flex:1;" />
+        <button type="submit" class="tk-btn tk-btn-sm"
+                style="background:rgba(16,185,129,0.12); color:#6ee7b7;
+                       border:1px solid rgba(16,185,129,0.25); padding:5px 10px;"
+                title="Salvar">
+          <i class="bi bi-check-lg"></i>
+        </button>
+        <button type="button" class="tk-btn tk-btn-ghost tk-btn-sm"
+                onclick="hidePgmEdit({{ pgm.id }})"
+                style="padding:5px 10px;"
+                title="Cancelar">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+    </form>
+
+    {# Botão para abrir edição inline #}
     <button class="tk-btn tk-btn-ghost tk-btn-sm"
-            data-bs-toggle="modal"
-            data-bs-target="#modal-renomear-{{ pgm.id }}">
+            id="pgm-edit-btn-{{ pgm.id }}"
+            onclick="showPgmEdit({{ pgm.id }})"
+            title="Renomear PGM">
       <i class="bi bi-pencil"></i> Renomear
     </button>
   </div>
@@ -76,38 +108,48 @@
   {% endif %}
 
 </div>
-
-{# Modal renomear PGM #}
-<div class="modal fade" id="modal-renomear-{{ pgm.id }}" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content"
-         style="background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-lg);">
-      <div class="modal-header" style="border-color:var(--border);">
-        <h5 class="modal-title" style="font-weight:800; font-size:0.95rem;">
-          Renomear PGM
-        </h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-      </div>
-      <form method="POST" action="{{ url_for('lider.renomear_pgm', pgm_id=pgm.id) }}">
-        <div class="modal-body">
-          <label class="tk-label" for="nome-pgm-{{ pgm.id }}">Novo nome (escolhido pelos juniores)</label>
-          <input class="tk-input" type="text" id="nome-pgm-{{ pgm.id }}"
-                 name="nome" value="{{ pgm.name }}" required
-                 placeholder="Ex: Guerreiros de Deus" />
-        </div>
-        <div class="modal-footer" style="border-color:var(--border);">
-          <button type="button" class="tk-btn tk-btn-ghost tk-btn-sm" data-bs-dismiss="modal">
-            Cancelar
-          </button>
-          <button type="submit" class="tk-btn tk-btn-purple tk-btn-sm">
-            <i class="bi bi-check-lg"></i> Salvar
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
-</div>
-
 {% endfor %}
 
 {% endblock %}
+
+{% block scripts %}
+<script>
+function showPgmEdit(pgmId) {
+  document.getElementById('pgm-display-' + pgmId).style.display = 'none';
+  document.getElementById('pgm-edit-btn-' + pgmId).style.display = 'none';
+  document.getElementById('pgm-edit-' + pgmId).style.display = 'block';
+  var input = document.getElementById('pgm-input-' + pgmId);
+  input.focus();
+  input.select();
+}
+
+function hidePgmEdit(pgmId) {
+  document.getElementById('pgm-edit-' + pgmId).style.display = 'none';
+  document.getElementById('pgm-display-' + pgmId).style.display = 'flex';
+  document.getElementById('pgm-edit-btn-' + pgmId).style.display = '';
+}
+
+function validarNomePgm(form) {
+  var input = form.querySelector('input[name="nome"]');
+  if (!input.value.trim()) {
+    input.style.borderColor = 'rgba(239,68,68,0.5)';
+    input.focus();
+    return false;
+  }
+  return true;
+}
+
+// Fecha edição com ESC
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    document.querySelectorAll('[id^="pgm-edit-"]').forEach(function(el) {
+      if (el.id.match(/^pgm-edit-\d+$/)) {
+        var id = el.id.replace('pgm-edit-', '');
+        hidePgmEdit(id);
+      }
+    });
+  }
+});
+</script>
+{% endblock %}
+
