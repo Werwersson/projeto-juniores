@@ -416,7 +416,7 @@ def resumos():
         )
 
     if busca:
-        query = query.join(User).where(db.func.lower(User.name).like(f"%{busca.lower()}%"))
+        query = query.join(User, ChecklistLog.junior_id == User.id).where(db.func.lower(User.name).like(f"%{busca.lower()}%"))
 
     # Aplica filtro de status
     if filtro == "pendente":
