@@ -394,6 +394,7 @@ def resumos():
     from app.models.activity import ChecklistLog, SummaryStatus
 
     filtro = request.args.get("filtro", "pendente")
+    busca = request.args.get("busca", "").strip()
 
     if current_user.is_supervisor:
         query = db.select(ChecklistLog).where(
@@ -413,6 +414,9 @@ def resumos():
             ChecklistLog.junior_id.in_(junior_ids),
             ChecklistLog.summary != None  # noqa: E711
         )
+
+    if busca:
+        query = query.join(User).where(db.func.lower(User.name).like(f"%{busca.lower()}%"))
 
     # Aplica filtro de status
     if filtro == "pendente":
@@ -486,4 +490,5 @@ def validar_resumo(log_id: int):
 
     # Volta para o filtro atual
     filtro = request.form.get("filtro", "pendente")
-    return redirect(url_for("lider.resumos", filtro=filtro))
+    busca = request.form.get("busca", "").strip()
+    return redirect(url_for("lider.resumos", filtro=filtro, busca=busca))

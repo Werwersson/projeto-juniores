@@ -20,26 +20,36 @@
   </div>
 </div>
 
-{# Filtros #}
-<div style="display:flex; gap:8px; margin-bottom:24px; flex-wrap:wrap;">
-  <a href="{{ url_for('lider.resumos', filtro='pendente') }}"
-     class="tk-btn tk-btn-sm {% if filtro == 'pendente' %}tk-btn-purple{% else %}tk-btn-ghost{% endif %}">
-    <i class="bi bi-hourglass-split"></i> Pendentes
-    {% if pendentes > 0 %}<span style="background:rgba(255,255,255,0.3); padding:1px 6px; border-radius:10px; font-size:0.75rem;">{{ pendentes }}</span>{% endif %}
-  </a>
-  <a href="{{ url_for('lider.resumos', filtro='aprovado') }}"
-     class="tk-btn tk-btn-sm {% if filtro == 'aprovado' %}tk-btn-green{% else %}tk-btn-ghost{% endif %}">
-    <i class="bi bi-check-circle-fill"></i> Aprovados
-  </a>
-  <a href="{{ url_for('lider.resumos', filtro='rejeitado') }}"
-     class="tk-btn tk-btn-sm {% if filtro == 'rejeitado' %}tk-btn-sm{% else %}tk-btn-ghost{% endif %}"
-     style="{% if filtro == 'rejeitado' %}background:rgba(239,68,68,0.2);color:#fca5a5;border:1px solid rgba(239,68,68,0.3);{% endif %}">
-    <i class="bi bi-x-circle-fill"></i> Rejeitados
-  </a>
-  <a href="{{ url_for('lider.resumos', filtro='todos') }}"
-     class="tk-btn tk-btn-ghost tk-btn-sm {% if filtro == 'todos' %}active{% endif %}">
-    Todos ({{ logs | length }})
-  </a>
+{# Filtros e Busca #}
+<div style="display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap; justify-content:space-between; align-items:center;">
+  <div style="display:flex; gap:8px; flex-wrap:wrap;">
+    <a href="{{ url_for('lider.resumos', filtro='pendente', busca=request.args.get('busca', '')) }}"
+       class="tk-btn tk-btn-sm {% if filtro == 'pendente' %}tk-btn-purple{% else %}tk-btn-ghost{% endif %}">
+      <i class="bi bi-hourglass-split"></i> Pendentes
+      {% if pendentes > 0 %}<span style="background:rgba(255,255,255,0.3); padding:1px 6px; border-radius:10px; font-size:0.75rem;">{{ pendentes }}</span>{% endif %}
+    </a>
+    <a href="{{ url_for('lider.resumos', filtro='aprovado', busca=request.args.get('busca', '')) }}"
+       class="tk-btn tk-btn-sm {% if filtro == 'aprovado' %}tk-btn-green{% else %}tk-btn-ghost{% endif %}">
+      <i class="bi bi-check-circle-fill"></i> Aprovados
+    </a>
+    <a href="{{ url_for('lider.resumos', filtro='rejeitado', busca=request.args.get('busca', '')) }}"
+       class="tk-btn tk-btn-sm {% if filtro == 'rejeitado' %}tk-btn-sm{% else %}tk-btn-ghost{% endif %}"
+       style="{% if filtro == 'rejeitado' %}background:rgba(239,68,68,0.2);color:#fca5a5;border:1px solid rgba(239,68,68,0.3);{% endif %}">
+      <i class="bi bi-x-circle-fill"></i> Rejeitados
+    </a>
+    <a href="{{ url_for('lider.resumos', filtro='todos', busca=request.args.get('busca', '')) }}"
+       class="tk-btn tk-btn-ghost tk-btn-sm {% if filtro == 'todos' %}active{% endif %}">
+      Todos ({{ logs | length }})
+    </a>
+  </div>
+  
+  <form method="GET" action="{{ url_for('lider.resumos') }}" style="display:flex; gap:8px;">
+    <input type="hidden" name="filtro" value="{{ filtro }}">
+    <input type="text" name="busca" value="{{ request.args.get('busca', '') }}" class="tk-input" placeholder="Buscar júnior..." style="padding:4px 8px; font-size:0.85rem; height:auto; width:200px;">
+    <button type="submit" class="tk-btn tk-btn-sm tk-btn-purple" style="padding:4px 8px; height:auto;">
+      <i class="bi bi-search"></i>
+    </button>
+  </form>
 </div>
 
 {% if logs %}
@@ -115,6 +125,7 @@
     {% if log.summary_status.value == 'pendente' %}
     <form method="POST" action="{{ url_for('lider.validar_resumo', log_id=log.id) }}">
       <input type="hidden" name="filtro" value="{{ filtro }}" />
+      <input type="hidden" name="busca" value="{{ request.args.get('busca', '') }}" />
 
       <div style="margin-bottom:12px;">
         <label class="tk-label" for="nota-{{ log.id }}">
