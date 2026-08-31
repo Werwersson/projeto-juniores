@@ -86,7 +86,7 @@
             {{ log.activity_type.name }}
           </div>
           <div style="font-size:0.75rem; color:var(--text-muted); font-weight:600; margin-top:2px;">
-            {{ log.created_at.strftime('%d/%m/%Y') }}
+            {{ log.activity_date.strftime('%d/%m/%Y') }}
             · Lançado por {{ log.launcher.name }}
             {% if log.notes %} · <em>{{ log.notes }}</em>{% endif %}
           </div>

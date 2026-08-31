@@ -51,9 +51,13 @@
           <i class="bi bi-person-badge-fill"></i>
           por {{ log.launcher.name }}
         </span>
-        <span>
-          <i class="bi bi-calendar3"></i>
-          {{ log.created_at.strftime('%d/%m/%Y às %H:%M') }}
+        <span title="Data da atividade">
+          <i class="bi bi-calendar-event"></i>
+          Atividade: {{ log.activity_date.strftime('%d/%m/%Y') }}
+        </span>
+        <span title="Data do lançamento no sistema" style="opacity:0.75;">
+          <i class="bi bi-clock-history"></i>
+          Lançado em: {{ log.created_at.strftime('%d/%m/%Y às %H:%M') }}
         </span>
         {% if log.notes %}
         <span style="color:var(--text-soft);">
