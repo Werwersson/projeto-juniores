@@ -50,12 +50,12 @@ def create_app(config_name=None):
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
         response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
 
-        # CSP sem unsafe-inline — scripts permitidos apenas com o nonce correto
+        # CSP sem unsafe-inline no script — scripts permitidos apenas com o nonce correto
         response.headers["Content-Security-Policy"] = (
             "default-src 'self'; "
             f"script-src 'self' 'nonce-{nonce}' cdn.jsdelivr.net; "
-            "style-src 'self' cdn.jsdelivr.net fonts.googleapis.com 'unsafe-inline'; "
-            "font-src 'self' cdn.jsdelivr.net fonts.gstatic.com; "
+            "style-src 'self' cdn.jsdelivr.net 'unsafe-inline'; "
+            "font-src 'self' cdn.jsdelivr.net; "
             "img-src 'self'; "
             "frame-ancestors 'none';"
         )

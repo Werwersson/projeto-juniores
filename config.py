@@ -22,8 +22,10 @@ class Config:
 
     # ── Cookies de sessão seguros ──────────────────────────────────────────────
     SESSION_COOKIE_HTTPONLY  = True   # Inacessível via JavaScript
+    SESSION_COOKIE_SECURE    = True   # Só HTTPS (removido em dev)
     SESSION_COOKIE_SAMESITE  = "Lax" # Bloqueia CSRF cross-site
     REMEMBER_COOKIE_HTTPONLY = True
+    REMEMBER_COOKIE_SECURE   = True
     REMEMBER_COOKIE_SAMESITE = "Lax"  # Bloqueia CSRF via cookie remember-me
     REMEMBER_COOKIE_DURATION = 60 * 60 * 24 * 30  # 30 dias
 
@@ -35,6 +37,7 @@ class Config:
 class DevelopmentConfig(Config):
     DEBUG = True
     SESSION_COOKIE_SECURE = False  # HTTP local
+    REMEMBER_COOKIE_SECURE = False
 
 
 class ProductionConfig(Config):
