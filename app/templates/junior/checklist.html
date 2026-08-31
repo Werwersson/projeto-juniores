@@ -249,7 +249,8 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="{{ url_for('static', filename='js/checklist.js') }}"></script>
+<script src="{{ url_for('static', filename='js/checklist.js') }}"
+        integrity="sha384-YQeVRwmtYsKM5EAltZgVrnexbocOxgz0xvReceJbsd2yGX3co86L+TANMnRwzmHo"></script>
 <script nonce="{{ csp_nonce }}">
 function atualizarContador(textarea) {
   const n = textarea.value.length;

@@ -49,6 +49,7 @@ def create_app(config_name=None):
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
         response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
+        response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
 
         # CSP sem unsafe-inline no script — scripts permitidos apenas com o nonce correto
         response.headers["Content-Security-Policy"] = (
@@ -57,7 +58,10 @@ def create_app(config_name=None):
             "style-src 'self' cdn.jsdelivr.net 'unsafe-inline'; "
             "font-src 'self' cdn.jsdelivr.net; "
             "img-src 'self'; "
-            "frame-ancestors 'none';"
+            "frame-ancestors 'none'; "
+            "base-uri 'self'; "
+            "form-action 'self'; "
+            "object-src 'none';"
         )
         return response
 
