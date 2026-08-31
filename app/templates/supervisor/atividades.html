@@ -160,6 +160,7 @@
       </div>
 
       <form method="POST" action="{{ url_for('supervisor.nova_atividade') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
 
         <div style="margin-bottom:14px;">
           <label class="tk-label">Nome <span style="color:#fca5a5;">*</span></label>
@@ -225,6 +226,7 @@
         {# ── Formulário de edição ── #}
         <form method="POST" action="{{ url_for('supervisor.editar_atividade', act_id=act.id) }}"
               style="display:flex; align-items:center; gap:10px; flex:1; flex-wrap:wrap; min-width:0;">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
 
           <div style="flex:1; min-width:160px;">
             <input class="tk-input" type="text" name="name" value="{{ act.name }}"
@@ -265,6 +267,7 @@
               data-act-name="{{ act.name }}"
               data-act-active="{{ 'true' if act.is_active else 'false' }}"
               data-act-id="{{ act.id }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
           <button type="button" class="tk-btn tk-btn-sm toggle-btn"
                   style="{% if act.is_active %}background:rgba(16,185,129,0.1);color:#6ee7b7;border:1px solid rgba(16,185,129,0.3);{% else %}background:rgba(239,68,68,0.1);color:#fca5a5;border:1px solid rgba(239,68,68,0.2);{% endif %}"
                   title="{{ 'Desativar' if act.is_active else 'Ativar' }}"
@@ -299,6 +302,7 @@
         {# ── Formulário de edição ── #}
         <form method="POST" action="{{ url_for('supervisor.editar_atividade', act_id=act.id) }}"
               style="display:flex; align-items:center; gap:10px; flex:1; flex-wrap:wrap; min-width:0;">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
 
           <div style="flex:1; min-width:160px;">
             <input class="tk-input" type="text" name="name" value="{{ act.name }}"
@@ -331,6 +335,7 @@
               data-act-name="{{ act.name }}"
               data-act-active="{{ 'true' if act.is_active else 'false' }}"
               data-act-id="{{ act.id }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
           <button type="button" class="tk-btn tk-btn-sm toggle-btn"
                   style="{% if act.is_active %}background:rgba(16,185,129,0.1);color:#6ee7b7;border:1px solid rgba(16,185,129,0.3);{% else %}background:rgba(239,68,68,0.1);color:#fca5a5;border:1px solid rgba(239,68,68,0.2);{% endif %}"
                   title="{{ 'Desativar' if act.is_active else 'Ativar' }}"
@@ -372,7 +377,7 @@
 {% endblock %}
 
 {% block scripts %}
-<script>
+<script nonce="{{ csp_nonce }}">
 function toggleSummary(val) {
   document.getElementById('campo-resumo').style.display =
     val === 'junior' ? 'block' : 'none';

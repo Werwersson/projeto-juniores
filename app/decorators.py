@@ -67,7 +67,7 @@ def requires_pgm_access(pgm_id_param: str = "pgm_id"):
 
 def requires_own_profile_or_leader(junior_id_param: str = "junior_id"):
     """
-    Permite acesso ao próprio júnior, ao líder do seu PGM e ao supervisor.
+    Permite acesso ao próprio junior, ao líder do seu PGM e ao supervisor.
     """
     def decorator(f):
         @wraps(f)

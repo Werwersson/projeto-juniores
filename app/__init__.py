@@ -1,58 +1,78 @@
 import os
-from urllib import response
-from flask import Flask
+import secrets
+from flask import Flask, g
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
+from flask_wtf.csrf import CSRFProtect
 
 db = SQLAlchemy()
 login_manager = LoginManager()
+csrf = CSRFProtect()
 
-def create_app(config_name="production"):
+
+def create_app(config_name=None):
     app = Flask(__name__)
-    
-    app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'chave-super-secreta')
 
-    db_url = os.environ.get('DATABASE_URL') or 'sqlite:///banco_local.db'
-    if db_url.startswith("postgres://"):
-        db_url = db_url.replace("postgres://", "postgresql://", 1)
-        
-    app.config['SQLALCHEMY_DATABASE_URI'] = db_url
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    
+    # ── Carrega configuração do config.py ───────────────────────────────────
+    if config_name is None:
+        config_name = os.environ.get("FLASK_ENV", "production")
+
+    from config import config as config_map
+    app.config.from_object(config_map.get(config_name, config_map["default"]))
+
+    # ── Extensões ───────────────────────────────────────────────────────────
     db.init_app(app)
     login_manager.init_app(app)
-    
-    login_manager.login_view = 'auth.login'
+    csrf.init_app(app)
+
+    login_manager.login_view = "auth.login"
     login_manager.login_message = "Por favor, faça login para acessar esta página."
     login_manager.login_message_category = "info"
 
+    # ── Nonce CSP por requisição ────────────────────────────────────────────
+    @app.before_request
+    def _generate_csp_nonce():
+        """Gera um nonce criptograficamente seguro para cada requisição."""
+        g.csp_nonce = secrets.token_urlsafe(16)
+
+    # Torna o nonce disponível globalmente nos templates Jinja2
+    @app.context_processor
+    def _inject_csp_nonce():
+        return {"csp_nonce": g.get("csp_nonce", "")}
+
+    # ── Cabeçalhos de segurança ─────────────────────────────────────────────
     @app.after_request
     def set_security_headers(response):
+        nonce = g.get("csp_nonce", "")
+
         response.headers["X-Frame-Options"] = "SAMEORIGIN"
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
         response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
+
+        # CSP sem unsafe-inline — scripts permitidos apenas com o nonce correto
         response.headers["Content-Security-Policy"] = (
             "default-src 'self'; "
-            "script-src 'self' 'unsafe-inline' cdn.jsdelivr.net; "
+            f"script-src 'self' 'nonce-{nonce}' cdn.jsdelivr.net; "
             "style-src 'self' cdn.jsdelivr.net fonts.googleapis.com 'unsafe-inline'; "
             "font-src 'self' cdn.jsdelivr.net fonts.gstatic.com; "
-            "img-src 'self' data:; "
+            "img-src 'self'; "
             "frame-ancestors 'none';"
         )
         return response
 
+    # ── Blueprints ──────────────────────────────────────────────────────────
     with app.app_context():
         from .blueprints.auth import auth_bp
         from .blueprints.junior import junior_bp
         from .blueprints.lider import lider_bp
         from .blueprints.supervisor import supervisor_bp
         from .blueprints.period import period_bp
-        
+
         app.register_blueprint(auth_bp)
-        app.register_blueprint(junior_bp, url_prefix='/junior')
-        app.register_blueprint(lider_bp, url_prefix='/lider')
-        app.register_blueprint(supervisor_bp, url_prefix='/supervisor')
-        app.register_blueprint(period_bp, url_prefix='/periodo')
-        
+        app.register_blueprint(junior_bp, url_prefix="/junior")
+        app.register_blueprint(lider_bp, url_prefix="/lider")
+        app.register_blueprint(supervisor_bp, url_prefix="/supervisor")
+        app.register_blueprint(period_bp, url_prefix="/periodo")
+
     return app

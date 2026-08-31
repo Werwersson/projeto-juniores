@@ -24,6 +24,7 @@
     <div class="tk-card tk-card-glow-purple">
 
       <form method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
 
         {# Nome completo — obrigatório #}
         <div style="margin-bottom:18px;">
@@ -53,7 +54,7 @@
             <select class="tk-input" id="role" name="role" required
                     onchange="togglePgmField(this.value)">
               <option value="" disabled selected>Selecionar papel...</option>
-              <option value="junior"     {% if form.get('role') == 'junior'     %}selected{% endif %}>Júnior (criança)</option>
+              <option value="junior"     {% if form.get('role') == 'junior'     %}selected{% endif %}>Junior (criança)</option>
               <option value="lider"      {% if form.get('role') == 'lider'      %}selected{% endif %}>Líder de PGM</option>
               <option value="supervisor" {% if form.get('role') == 'supervisor' %}selected{% endif %}>Supervisor</option>
             </select>
@@ -139,7 +140,7 @@
       <div style="font-weight:800; font-size:0.95rem; margin-bottom:12px;">Papéis do sistema</div>
       <div style="display:flex; flex-direction:column; gap:10px;">
         <div style="padding:12px; background:var(--bg-card2); border-radius:var(--radius-sm);">
-          <span class="tk-badge tk-badge-junior">Júnior</span>
+          <span class="tk-badge tk-badge-junior">Junior</span>
           <p style="font-size:0.82rem; color:var(--text-muted); font-weight:600; margin:8px 0 0; line-height:1.6;">
             Criança integrante de um PGM. Acessa o checklist diário e vê o próprio saldo de Premiles.
           </p>
@@ -165,7 +166,7 @@
 {% endblock %}
 
 {% block scripts %}
-<script>
+<script nonce="{{ csp_nonce }}">
   function togglePgmField(role) {
     document.getElementById('campo-pgm').style.display =
       (role === 'supervisor') ? 'none' : 'block';

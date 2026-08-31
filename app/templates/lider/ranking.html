@@ -92,7 +92,7 @@
     <thead>
       <tr>
         <th style="width:48px;">#</th>
-        <th>Júnior</th>
+        <th>Junior</th>
         <th>PGM</th>
         <th>Premiles</th>
         <th>Barra</th>
@@ -141,7 +141,7 @@
       {% else %}
       <tr>
         <td colspan="5" style="text-align:center; padding:40px; color:var(--text-muted); font-weight:600;">
-          Nenhum júnior cadastrado ainda.
+          Nenhum junior cadastrado ainda.
         </td>
       </tr>
       {% endfor %}
@@ -152,7 +152,7 @@
 {% endblock %}
 
 {% block scripts %}
-<script>
+<script nonce="{{ csp_nonce }}">
 document.querySelectorAll('.filtro-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.filtro-btn').forEach(b => b.classList.remove('active'));

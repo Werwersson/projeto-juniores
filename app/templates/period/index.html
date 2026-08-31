@@ -65,13 +65,14 @@
         </div>
         <p style="font-size:0.8rem; color:var(--text-muted); font-weight:600;
                   line-height:1.6; margin-bottom:14px;">
-          Ao encerrar, o saldo atual de cada júnior será arquivado com sua posição
+          Ao encerrar, o saldo atual de cada junior será arquivado com sua posição
           no ranking, e todos os saldos serão <strong style="color:#fca5a5;">zerados</strong>
           para o próximo ciclo. Esta ação não pode ser desfeita.
         </p>
         <form method="POST"
               action="{{ url_for('period.encerrar', periodo_id=ativo.id) }}"
               onsubmit="return confirm('Tem certeza? Os saldos serão arquivados e zerados. Esta ação é irreversível.')">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
           <button type="submit" class="tk-btn tk-btn-sm"
                   style="background:rgba(239,68,68,0.2); color:#fca5a5;
                          border:1px solid rgba(239,68,68,0.3); width:100%; justify-content:center;">
@@ -99,6 +100,7 @@
       </p>
 
       <form method="POST" action="{{ url_for('period.novo') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
 
         <div style="margin-bottom:16px;">
           <label class="tk-label" for="name">Nome do período</label>
@@ -199,7 +201,7 @@
 {% endblock %}
 
 {% block scripts %}
-<script>
+<script nonce="{{ csp_nonce }}">
   // Preenche a data de início com hoje por padrão
   const startInput = document.getElementById('start_date');
   if (startInput && !startInput.value) {

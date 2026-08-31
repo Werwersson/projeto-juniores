@@ -35,6 +35,7 @@
       </div>
 
       <form method="POST" action="{{ url_for('auth.perfil') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
 
         <div style="margin-bottom:16px;">
           <label class="tk-label">Nome completo <span style="color:#fca5a5;">*</span></label>

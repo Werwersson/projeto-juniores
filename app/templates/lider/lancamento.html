@@ -39,9 +39,10 @@
       </div>
 
       <form method="POST" action="{{ url_for('lider.lancamento') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
 
         <div class="mb-3">
-          <label class="tk-label" for="junior_id">Júnior</label>
+          <label class="tk-label" for="junior_id">Junior</label>
           <select class="tk-input" id="junior_id" name="junior_id" required>
             <option value="" disabled selected>Selecionar criança...</option>
             {% for junior in juniors %}
@@ -104,6 +105,7 @@
       </div>
 
       <form method="POST" action="{{ url_for('lider.lancamento_lote') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
 
         <div class="mb-3">
           <label class="tk-label" for="lote_activity">Atividade</label>
@@ -210,8 +212,9 @@
       </div>
 
       <form method="POST" id="form-retroativo">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
         <div class="mb-3">
-          <label class="tk-label">Júnior</label>
+          <label class="tk-label">Junior</label>
           <select class="tk-input" name="junior_id" required onchange="updateRetroUrl(this)">
             <option value="" disabled selected>Selecionar criança...</option>
             {% for junior in juniors %}
@@ -259,7 +262,7 @@
 {% endblock %}
 
 {% block scripts %}
-<script>
+<script nonce="{{ csp_nonce }}">
   // Inicializa todas as datas com hoje e limita ao dia atual
   const hoje = new Date().toISOString().split('T')[0];
   ['ind_date', 'lote_date'].forEach(function(id) {

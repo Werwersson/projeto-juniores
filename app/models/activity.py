@@ -10,7 +10,7 @@ class ActivitySource(str, enum.Enum):
 class SummaryStatus(str, enum.Enum):
     PENDENTE  = "pendente"   # Aguardando validação do líder
     APROVADO  = "aprovado"   # Líder aprovou
-    REJEITADO = "rejeitado"  # Líder rejeitou — júnior deve reescrever
+    REJEITADO = "rejeitado"  # Líder rejeitou — junior deve reescrever
 
 
 class ActivityType(db.Model):

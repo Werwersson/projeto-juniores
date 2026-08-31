@@ -63,6 +63,7 @@
             </div>
 
             <form method="POST" action="{{ url_for('junior.checklist') }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
               <input type="hidden" name="activity_type_id" value="{{ activity.id }}" />
               <input type="hidden" name="premiles" value="{{ activity.default_premiles or 10 }}" />
               <textarea name="summary" rows="3" required minlength="10"
@@ -132,6 +133,7 @@
               </div>
             </div>
             <form class="tk-check-form" method="POST" action="{{ url_for('junior.checklist') }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
               <input type="hidden" name="activity_type_id" value="{{ activity.id }}" />
               <input type="hidden" name="premiles" value="{{ activity.default_premiles or 10 }}" />
               <textarea name="summary" rows="3" required minlength="10"
@@ -158,6 +160,7 @@
           {# ── ATIVIDADE NORMAL ── #}
           {% else %}
           <form class="tk-check-form" method="POST" action="{{ url_for('junior.checklist') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
             <input type="hidden" name="activity_type_id" value="{{ activity.id }}" />
             <input type="hidden" name="premiles" value="{{ activity.default_premiles or 10 }}" />
             <button type="submit"
@@ -247,7 +250,7 @@
 
 {% block scripts %}
 <script src="{{ url_for('static', filename='js/checklist.js') }}"></script>
-<script>
+<script nonce="{{ csp_nonce }}">
 function atualizarContador(textarea) {
   const n = textarea.value.length;
   const id = textarea.closest('form').querySelector('[id^="contador-"]');
@@ -257,7 +260,7 @@ function atualizarContador(textarea) {
   }
 }
 </script>
-<style>
+<style nonce="{{ csp_nonce }}">
 @keyframes tkpulse { from{transform:scale(1);}to{transform:scale(1.15);} }
 </style>
 {% endblock %}

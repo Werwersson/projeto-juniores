@@ -156,7 +156,7 @@ def extrato():
     )
 
 
-# ── Perfil do júnior ──────────────────────────────────────────────────────────
+# ── Perfil do junior ──────────────────────────────────────────────────────────
 
 def _validar_cpf(cpf: str) -> bool:
     """Valida CPF (formato xxx.xxx.xxx-xx e dígitos verificadores)."""

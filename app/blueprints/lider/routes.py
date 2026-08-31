@@ -109,7 +109,7 @@ def lancamento():
         # Valida que o líder tem acesso ao junior
         junior = db.get_or_404(User, junior_id)
         if not current_user.is_supervisor and not current_user.manages_pgm(junior.pgm_id):
-            flash("Acesso negado a este júnior.", "danger")
+            flash("Acesso negado a este junior.", "danger")
             return redirect(url_for("lider.lancamento"))
 
         activity = db.get_or_404(ActivityType, activity_type_id)
@@ -175,7 +175,7 @@ def lancamento_lote():
         return redirect(url_for("lider.lancamento"))
 
     if not junior_ids:
-        flash("Selecione ao menos um júnior.", "warning")
+        flash("Selecione ao menos um junior.", "warning")
         return redirect(url_for("lider.lancamento"))
 
     activity = db.get_or_404(ActivityType, activity_type_id)
@@ -185,7 +185,7 @@ def lancamento_lote():
         junior = db.session.get(User, int(jid))
         if not junior:
             continue
-        # Segurança: garante que o líder tem acesso a este júnior
+        # Segurança: garante que o líder tem acesso a este junior
         if not current_user.is_supervisor and not current_user.manages_pgm(junior.pgm_id):
             continue
 
@@ -208,11 +208,11 @@ def lancamento_lote():
         creditados += 1
 
     audit_log(LogAction.LANCAMENTO_LOTE,
-              f"{premiles} Premiles creditados em lote para {creditados} júnior(es) — "
+              f"{premiles} Premiles creditados em lote para {creditados} junior(es) — "
               f"{activity.name} (referente a {activity_date.strftime('%d/%m/%Y')})",
               actor=current_user)
     db.session.commit()
-    flash(f"✅ {premiles} Premiles creditados para {creditados} júnior(es) — {activity.name}.", "success")
+    flash(f"✅ {premiles} Premiles creditados para {creditados} junior(es) — {activity.name}.", "success")
     return redirect(url_for("lider.lancamento"))
 
 
@@ -451,7 +451,7 @@ def validar_resumo(log_id: int):
 
     log = db.get_or_404(ChecklistLog, log_id)
 
-    # Segurança: verifica acesso ao júnior
+    # Segurança: verifica acesso ao junior
     junior = db.session.get(User, log.junior_id)
     if not current_user.is_supervisor and not current_user.manages_pgm(junior.pgm_id):
         flash("Acesso negado.", "danger")

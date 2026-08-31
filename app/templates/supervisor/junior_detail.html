@@ -26,7 +26,7 @@
   </span>
 </div>
 
-{# Stats do júnior #}
+{# Stats do junior #}
 <div class="row g-3 mb-4">
   <div class="col-6 col-md-3">
     <div class="tk-stat tk-stat-orange">
@@ -161,7 +161,7 @@
       <div style="font-weight:700; font-size:0.88rem;">{{ log.activity_type.name }}</div>
       <div style="font-size:0.75rem; color:var(--text-muted); font-weight:600; margin-top:2px;">
         {{ log.activity_date.strftime('%d/%m/%Y') }}
-        {% if log.credited_by %} · Creditado pelo líder{% else %} · Marcado pelo júnior{% endif %}
+        {% if log.credited_by %} · Creditado pelo líder{% else %} · Marcado pelo junior{% endif %}
       </div>
     </div>
     <div class="tk-extrato-pts">+{{ log.premiles_awarded }}</div>

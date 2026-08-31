@@ -51,7 +51,7 @@ def criar_periodo(name: str, start_date: date, end_date, created_by_id: int) -> 
 def encerrar_periodo(periodo_id: int) -> dict:
     """
     Encerra um período:
-      1. Tira snapshot de cada júnior (saldo + posição geral + posição por PGM)
+      1. Tira snapshot de cada junior (saldo + posição geral + posição por PGM)
       2. Zera o saldo de todos os juniores (premiles_balance)
       3. Marca o período como inativo e define closed_at
     Retorna um dict com estatísticas do encerramento.
@@ -62,7 +62,7 @@ def encerrar_periodo(periodo_id: int) -> dict:
     if not periodo.is_active:
         raise ValueError("Este período já foi encerrado.")
 
-    # Busca todos os júniores com saldo, ordenados desc
+    # Busca todos os juniores com saldo, ordenados desc
     juniors = db.session.execute(
         db.select(User)
         .where(User.role == UserRole.JUNIOR)

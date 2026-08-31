@@ -88,7 +88,7 @@
           <div style="display:flex; gap:6px; flex-wrap:wrap;">
             {% if u.is_junior %}
             <a href="{{ url_for('supervisor.junior_detail', junior_id=u.id) }}"
-               class="tk-btn tk-btn-ghost tk-btn-sm" title="Ver perfil do júnior">
+               class="tk-btn tk-btn-ghost tk-btn-sm" title="Ver perfil do junior">
               <i class="bi bi-eye"></i>
             </a>
             {% endif %}
@@ -98,6 +98,7 @@
             </a>
             <form method="POST" action="{{ url_for('supervisor.gerar_link_reset', user_id=u.id) }}"
                   onsubmit="return confirm('Gerar link de recuperação de senha para {{ u.name }}?')">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
               <button type="submit" class="tk-btn tk-btn-sm tk-btn-ghost" title="Gerar link de recuperação de senha">
                 <i class="bi bi-key-fill"></i>
               </button>
@@ -106,6 +107,7 @@
             <form method="POST"
                   action="{{ url_for('supervisor.excluir_usuario', user_id=u.id) }}"
                   onsubmit="return confirm('Excluir {{ u.name }}? Esta ação não pode ser desfeita.')">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
               <button type="submit" class="tk-btn tk-btn-sm"
                       style="background:rgba(239,68,68,0.1); color:#fca5a5; border:1px solid rgba(239,68,68,0.2);" title="Excluir usuário">
                 <i class="bi bi-trash"></i>

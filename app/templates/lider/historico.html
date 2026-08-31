@@ -71,6 +71,7 @@
       {# Botão excluir com confirmação #}
       <form method="POST" action="{{ url_for('lider.excluir_lancamento', log_id=log.id) }}"
             onsubmit="return confirm('Excluir este lançamento? Os Premiles serão revertidos.')">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
         <button type="submit"
                 style="background:none; border:none; cursor:pointer;
                        font-size:0.75rem; color:var(--text-muted); padding:0;"
@@ -125,7 +126,7 @@
 {% endblock %}
 
 {% block scripts %}
-<script>
+<script nonce="{{ csp_nonce }}">
 document.querySelectorAll('.filtro-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.filtro-btn').forEach(b => b.classList.remove('active'));

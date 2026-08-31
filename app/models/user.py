@@ -28,7 +28,7 @@ class User(UserMixin, db.Model):
 
     created_at = db.Column(db.DateTime, server_default=db.func.now())
 
-    # ── Perfil do júnior ──────────────────────────────────────────────────────
+    # ── Perfil do junior ──────────────────────────────────────────────────────
     nome_completo   = db.Column(db.String(180), nullable=True)
     sexo            = db.Column(db.String(20), nullable=True)
     data_nascimento = db.Column(db.Date, nullable=True)

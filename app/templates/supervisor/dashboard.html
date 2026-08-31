@@ -169,6 +169,7 @@
                 id="pgm-edit-{{ pgm.id }}"
                 style="display:none;"
                 onsubmit="return validarNomePgm(this)">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
             <div style="display:flex; align-items:center; gap:6px;">
               <input class="tk-input" type="text" name="name"
                      value="{{ pgm.name }}" required
@@ -189,7 +190,7 @@
             </div>
           </form>
           <div style="font-size:0.72rem; color:var(--text-muted); font-weight:600; margin-top:2px;">
-            {{ pgm.juniors | length }} júnior{{ 'es' if pgm.juniors | length != 1 else '' }}
+            {{ pgm.juniors | length }} junior{{ 'es' if pgm.juniors | length != 1 else '' }}
           </div>
         </div>
         <a href="{{ url_for('supervisor.pgm_detail', pgm_id=pgm.id) }}"
@@ -297,6 +298,7 @@
     </p>
 
     <form method="POST" action="{{ url_for('supervisor.zerar_premiles') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
       <div style="margin-bottom:16px;">
         <label class="tk-label" style="text-align:center; display:block;">
           Digite <strong style="color:#fca5a5;">ZERAR</strong> para confirmar
@@ -331,7 +333,7 @@
 {% endblock %}
 
 {% block scripts %}
-<script>
+<script nonce="{{ csp_nonce }}">
 function toggleBtnZerar(val) {
   var btn = document.getElementById('btn-confirmar-zerar');
   var ok  = val.trim() === 'ZERAR';

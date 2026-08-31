@@ -40,7 +40,7 @@ class Period(db.Model):
 
 class PeriodSnapshot(db.Model):
     """
-    Guarda o saldo de cada júnior no momento do encerramento do período.
+    Guarda o saldo de cada junior no momento do encerramento do período.
     Permite histórico completo sem perder os dados ao zerar os saldos.
     """
     __tablename__ = "period_snapshots"

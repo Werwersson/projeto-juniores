@@ -22,6 +22,7 @@
       </div>
 
       <form method="POST" action="{{ url_for('junior.perfil') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
 
         {# Nome (somente leitura — alterado pelo supervisor) #}
         <div style="margin-bottom:16px;">
@@ -453,7 +454,7 @@
 {% endblock %}
 
 {% block scripts %}
-<script>
+<script nonce="{{ csp_nonce }}">
 /* ── Máscaras de input ────────────────────────────────────────────── */
 
 function mascara(input, pattern) {

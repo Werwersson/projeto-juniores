@@ -2,7 +2,7 @@
 {% block title %}Entrar — TeoK!ds.{% endblock %}
 
 {% block content %}
-<style>
+<style nonce="{{ csp_nonce }}">
   /* Oculta as mensagens flash do base.html para não duplicar nesta tela.
      Assim os alertas aparecem apenas dentro do card preto. */
   main > .mb-3 {
@@ -31,6 +31,7 @@
     {% endwith %}
 
     <form method="POST" action="{{ url_for('auth.login') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
 
       <div style="margin-bottom:18px;">
         <label class="tk-label" for="email">E-mail</label>

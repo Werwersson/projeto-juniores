@@ -188,7 +188,7 @@ def editar_usuario(user_id):
         user.name  = name
         user.email = email
 
-        # Atualiza PGM do júnior
+        # Atualiza PGM do junior
         if user.role == UserRole.JUNIOR and pgm_id:
             user.pgm_id = int(pgm_id)
 
@@ -681,7 +681,7 @@ def zerar_premiles():
     db.session.commit()
     
     flash(
-        f"✅ Saldos e extratos zerados com sucesso! {total_usuarios} júnior(es) começaram um novo ciclo.",
+        f"✅ Saldos e extratos zerados com sucesso! {total_usuarios} junior(es) começaram um novo ciclo.",
         "success"
     )
     return redirect(url_for("supervisor.dashboard"))

@@ -117,6 +117,7 @@
             </button>
             <form method="POST"
                   action="{{ url_for('periodo.encerrar', periodo_id=ativo.id) }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
               <button type="submit" class="tk-btn tk-btn-sm"
                       style="background:rgba(239,68,68,0.8); color:#fff; border:none;">
                 <i class="bi bi-stop-circle-fill"></i> Confirmar encerramento
@@ -142,6 +143,7 @@
       </div>
 
       <form method="POST" action="{{ url_for('periodo.novo') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
 
         <div style="margin-bottom:16px;">
           <label class="tk-label" for="name">Nome do período</label>
@@ -229,7 +231,7 @@
 {% endblock %}
 
 {% block scripts %}
-<style>
+<style nonce="{{ csp_nonce }}">
 @keyframes tkpulse { from{box-shadow:0 0 0 3px rgba(16,185,129,0.3);}
                      to  {box-shadow:0 0 0 6px rgba(16,185,129,0.05);} }
 </style>

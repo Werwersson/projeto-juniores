@@ -45,7 +45,7 @@
   
   <form method="GET" action="{{ url_for('lider.resumos') }}" style="display:flex; gap:8px;">
     <input type="hidden" name="filtro" value="{{ filtro }}">
-    <input type="text" name="busca" value="{{ request.args.get('busca', '') }}" class="tk-input" placeholder="Buscar júnior..." style="padding:4px 8px; font-size:0.85rem; height:auto; width:200px;">
+    <input type="text" name="busca" value="{{ request.args.get('busca', '') }}" class="tk-input" placeholder="Buscar junior..." style="padding:4px 8px; font-size:0.85rem; height:auto; width:200px;">
     <button type="submit" class="tk-btn tk-btn-sm tk-btn-purple" style="padding:4px 8px; height:auto;">
       <i class="bi bi-search"></i>
     </button>
@@ -93,7 +93,7 @@
       {% endif %}
     </div>
 
-    {# Resumo do júnior #}
+    {# Resumo do junior #}
     <div style="background:var(--bg-card2); border-radius:var(--radius-sm);
                 padding:16px; margin-bottom:16px; border-left:3px solid
                 {% if log.summary_status.value == 'aprovado' %}#10b981
@@ -101,7 +101,7 @@
                 {% else %}#fbbf24{% endif %};">
       <div style="font-size:0.7rem; font-weight:800; letter-spacing:1px;
                   text-transform:uppercase; color:var(--text-muted); margin-bottom:8px;">
-        Resumo do júnior
+        Resumo do junior
       </div>
       <p style="font-size:0.9rem; color:var(--text); font-weight:600;
                 line-height:1.7; margin:0; white-space:pre-wrap;">{{ log.summary }}</p>
@@ -124,12 +124,13 @@
     {# Ações — só para pendentes #}
     {% if log.summary_status.value == 'pendente' %}
     <form method="POST" action="{{ url_for('lider.validar_resumo', log_id=log.id) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
       <input type="hidden" name="filtro" value="{{ filtro }}" />
       <input type="hidden" name="busca" value="{{ request.args.get('busca', '') }}" />
 
       <div style="margin-bottom:12px;">
         <label class="tk-label" for="nota-{{ log.id }}">
-          Feedback para o júnior (opcional para aprovação, recomendado para rejeição)
+          Feedback para o junior (opcional para aprovação, recomendado para rejeição)
         </label>
         <input class="tk-input" type="text" id="nota-{{ log.id }}" name="nota"
                placeholder="Ex: Ótimo resumo! / Fale mais sobre o que aprendeu..." />

@@ -36,6 +36,7 @@
           id="pgm-edit-{{ pgm.id }}"
           style="display:none; flex:1; min-width:0;"
           onsubmit="return validarNomePgm(this)">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
       <div style="display:flex; align-items:center; gap:6px;">
         <input class="tk-input" type="text" name="nome"
                value="{{ pgm.name }}" required
@@ -71,7 +72,7 @@
   <table class="tk-table">
     <thead>
       <tr>
-        <th>Júnior</th>
+        <th>Junior</th>
         <th>Premiles</th>
         <th>Ações</th>
       </tr>
@@ -103,7 +104,7 @@
   {% else %}
   <div style="text-align:center; padding:30px; color:var(--text-muted); font-weight:600;">
     <i class="bi bi-person-plus" style="font-size:1.8rem; display:block; margin-bottom:8px;"></i>
-    Nenhum júnior cadastrado neste PGM ainda.
+    Nenhum junior cadastrado neste PGM ainda.
   </div>
   {% endif %}
 
@@ -113,7 +114,7 @@
 {% endblock %}
 
 {% block scripts %}
-<script>
+<script nonce="{{ csp_nonce }}">
 function showPgmEdit(pgmId) {
   document.getElementById('pgm-display-' + pgmId).style.display = 'none';
   document.getElementById('pgm-edit-btn-' + pgmId).style.display = 'none';

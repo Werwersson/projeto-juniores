@@ -45,6 +45,7 @@
     {% endwith %}
 
     <form method="POST" action="{{ url_for('auth.trocar_senha') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
 
       <div style="margin-bottom:16px;">
         <label class="tk-label" for="senha_atual">Senha atual</label>
@@ -88,7 +89,7 @@
 {% endblock %}
 
 {% block scripts %}
-<script>
+<script nonce="{{ csp_nonce }}">
 function checkSenha() {
   const nova = document.getElementById('nova_senha').value;
   const conf = document.getElementById('confirmar').value;

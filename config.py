@@ -24,6 +24,7 @@ class Config:
     SESSION_COOKIE_HTTPONLY  = True   # Inacessível via JavaScript
     SESSION_COOKIE_SAMESITE  = "Lax" # Bloqueia CSRF cross-site
     REMEMBER_COOKIE_HTTPONLY = True
+    REMEMBER_COOKIE_SAMESITE = "Lax"  # Bloqueia CSRF via cookie remember-me
     REMEMBER_COOKIE_DURATION = 60 * 60 * 24 * 30  # 30 dias
 
     # ── Rate limiting ──────────────────────────────────────────────────────────

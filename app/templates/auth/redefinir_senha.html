@@ -28,6 +28,7 @@
     {% endwith %}
 
     <form method="POST">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
       <div style="margin-bottom:16px;">
         <label class="tk-label" for="nova_senha">Nova senha</label>
         <input class="tk-input" type="password" id="nova_senha" name="nova_senha"
@@ -52,7 +53,7 @@
 {% endblock %}
 
 {% block scripts %}
-<script>
+<script nonce="{{ csp_nonce }}">
 function checkSenha() {
   const n = document.getElementById('nova_senha').value;
   const c = document.getElementById('confirmar').value;
