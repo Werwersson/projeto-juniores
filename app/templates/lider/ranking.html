@@ -83,18 +83,36 @@
 
 {# Lista completa #}
 <div class="tk-card">
-  <div style="font-size:0.72rem; font-weight:800; letter-spacing:1px; text-transform:uppercase;
-              color:var(--text-muted); margin-bottom:16px;">
-    Classificação completa
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px;">
+    <div style="font-size:0.72rem; font-weight:800; letter-spacing:1px; text-transform:uppercase;
+                color:var(--text-muted);">
+      Classificação completa
+    </div>
+
+    {# Controle de ordenação alfabética / pontos #}
+    <div style="display:flex; align-items:center; gap:8px;">
+      <label for="ordem-ranking" style="font-size:0.75rem; color:var(--text-muted); font-weight:700; white-space:nowrap;">
+        <i class="bi bi-sort-down"></i> Organizar por:
+      </label>
+      <select id="ordem-ranking" class="tk-input" style="padding:4px 10px; font-size:0.8rem; width:auto; font-weight:700; cursor:pointer;">
+        <option value="premiles-desc">⭐ Classificação (Premiles)</option>
+        <option value="nome-asc">🔤 Ordem alfabética (A → Z)</option>
+        <option value="nome-desc">🔤 Ordem alfabética (Z → A)</option>
+      </select>
+    </div>
   </div>
 
   <table class="tk-table" id="tabela-ranking">
     <thead>
       <tr>
         <th style="width:48px;">#</th>
-        <th>Junior</th>
+        <th style="cursor:pointer;" onclick="toggleSortRanking('nome')" title="Clique para ordenar alfabeticamente">
+          Junior <i class="bi bi-arrow-down-up" style="font-size:0.75rem; opacity:0.6;"></i>
+        </th>
         <th>PGM</th>
-        <th>Premiles</th>
+        <th style="cursor:pointer;" onclick="toggleSortRanking('premiles')" title="Clique para ordenar por Premiles">
+          Premiles <i class="bi bi-arrow-down-up" style="font-size:0.75rem; opacity:0.6;"></i>
+        </th>
         <th>Barra</th>
       </tr>
     </thead>
@@ -103,7 +121,10 @@
       {% for junior in juniors %}
       {% set saldo = junior.balance.total_balance if junior.balance else 0 %}
       {% set pct = ((saldo / max_pts) * 100) | int if max_pts > 0 else 0 %}
-      <tr data-pgm-id="{{ junior.pgm_id }}">
+      <tr data-pgm-id="{{ junior.pgm_id }}"
+          data-nome="{{ junior.name | lower }}"
+          data-saldo="{{ saldo }}"
+          data-rank-orig="{{ loop.index }}">
         <td>
           {% if loop.index == 1 %}👑
           {% elif loop.index == 2 %}🥈
@@ -153,6 +174,7 @@
 
 {% block scripts %}
 <script nonce="{{ csp_nonce }}">
+// Filtro por PGM
 document.querySelectorAll('.filtro-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.filtro-btn').forEach(b => b.classList.remove('active'));
@@ -171,5 +193,43 @@ document.querySelectorAll('.filtro-btn').forEach(btn => {
     });
   });
 });
+
+// Ordenação (Premiles ou Alfabética A-Z / Z-A)
+function sortRanking(criterio) {
+  const tbody = document.querySelector('#tabela-ranking tbody');
+  const rows = Array.from(tbody.querySelectorAll('tr[data-nome]'));
+
+  rows.sort((a, b) => {
+    if (criterio === 'nome-asc') {
+      return a.dataset.nome.localeCompare(b.dataset.nome, 'pt-BR');
+    } else if (criterio === 'nome-desc') {
+      return b.dataset.nome.localeCompare(a.dataset.nome, 'pt-BR');
+    } else { // premiles-desc
+      return parseInt(b.dataset.saldo || '0', 10) - parseInt(a.dataset.saldo || '0', 10);
+    }
+  });
+
+  rows.forEach(r => tbody.appendChild(r));
+}
+
+const selectRanking = document.getElementById('ordem-ranking');
+if (selectRanking) {
+  selectRanking.addEventListener('change', () => {
+    sortRanking(selectRanking.value);
+  });
+}
+
+let sortNomeAsc = true;
+function toggleSortRanking(col) {
+  if (col === 'nome') {
+    const novoCriterio = sortNomeAsc ? 'nome-asc' : 'nome-desc';
+    sortNomeAsc = !sortNomeAsc;
+    if (selectRanking) selectRanking.value = novoCriterio;
+    sortRanking(novoCriterio);
+  } else if (col === 'premiles') {
+    if (selectRanking) selectRanking.value = 'premiles-desc';
+    sortRanking('premiles-desc');
+  }
+}
 </script>
 {% endblock %}

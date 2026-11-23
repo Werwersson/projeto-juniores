@@ -59,7 +59,7 @@ def lancamento():
     # Líderes só veem juniores dos seus PGMs
     if current_user.is_supervisor:
         juniors = db.session.execute(
-            db.select(User).where(User.role == UserRole.JUNIOR)
+            db.select(User).where(User.role == UserRole.JUNIOR).order_by(User.name)
         ).scalars().all()
     else:
         pgm_ids = [pl.pgm_id for pl in current_user.led_pgms]
@@ -67,21 +67,21 @@ def lancamento():
             db.select(User).where(
                 User.role == UserRole.JUNIOR,
                 User.pgm_id.in_(pgm_ids)
-            )
+            ).order_by(User.name)
         ).scalars().all()
 
     activities = db.session.execute(
         db.select(ActivityType).where(
             ActivityType.source == ActivitySource.LEADER,
             ActivityType.is_active == True  # noqa: E712
-        )
+        ).order_by(ActivityType.name)
     ).scalars().all()
 
     checklist_activities = db.session.execute(
         db.select(ActivityType).where(
             ActivityType.source == ActivitySource.JUNIOR,
             ActivityType.is_active == True  # noqa: E712
-        )
+        ).order_by(ActivityType.name)
     ).scalars().all()
 
     if request.method == "POST":

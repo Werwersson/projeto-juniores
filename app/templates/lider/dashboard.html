@@ -69,17 +69,31 @@
 
   {# Tabela de juniores #}
   {% if pgm.juniors %}
-  <table class="tk-table">
+  <div style="display:flex; justify-content:flex-end; align-items:center; gap:8px; margin-bottom:10px;">
+    <button type="button" class="tk-btn tk-btn-ghost tk-btn-sm" onclick="toggleSortDashboardPgm({{ pgm.id }}, 'nome')"
+            title="Alternar ordem alfabética">
+      <i class="bi bi-sort-alpha-down"></i> <span id="label-sort-nome-{{ pgm.id }}">A → Z</span>
+    </button>
+    <button type="button" class="tk-btn tk-btn-ghost tk-btn-sm" onclick="toggleSortDashboardPgm({{ pgm.id }}, 'saldo')"
+            title="Ordenar por Premiles">
+      <i class="bi bi-star-fill"></i> Saldo
+    </button>
+  </div>
+  <table class="tk-table" id="tabela-pgm-{{ pgm.id }}">
     <thead>
       <tr>
-        <th>Junior</th>
-        <th>Premiles</th>
+        <th style="cursor:pointer;" onclick="toggleSortDashboardPgm({{ pgm.id }}, 'nome')" title="Clique para ordenar alfabeticamente">
+          Junior <i class="bi bi-arrow-down-up" style="font-size:0.75rem; opacity:0.6;"></i>
+        </th>
+        <th style="cursor:pointer;" onclick="toggleSortDashboardPgm({{ pgm.id }}, 'saldo')" title="Clique para ordenar por Premiles">
+          Premiles <i class="bi bi-arrow-down-up" style="font-size:0.75rem; opacity:0.6;"></i>
+        </th>
         <th>Ações</th>
       </tr>
     </thead>
     <tbody>
-      {% for junior in pgm.juniors %}
-      <tr>
+      {% for junior in pgm.juniors | sort(attribute='name') %}
+      <tr data-nome="{{ junior.name | lower }}" data-saldo="{{ junior.balance.total_balance if junior.balance else 0 }}">
         <td>
           <div style="display:flex; align-items:center; gap:10px;">
             <div class="tk-avatar av-junior">{{ junior.name[0].upper() }}</div>
@@ -138,6 +152,37 @@ function validarNomePgm(form) {
     return false;
   }
   return true;
+}
+
+// Ordenação da tabela de juniores do PGM
+const pgmSortState = {};
+
+function toggleSortDashboardPgm(pgmId, col) {
+  if (!pgmSortState[pgmId]) {
+    pgmSortState[pgmId] = { nomeAsc: true, col: 'nome' };
+  }
+  const state = pgmSortState[pgmId];
+  const tbody = document.querySelector('#tabela-pgm-' + pgmId + ' tbody');
+  if (!tbody) return;
+
+  const rows = Array.from(tbody.querySelectorAll('tr[data-nome]'));
+
+  if (col === 'nome') {
+    state.nomeAsc = !state.nomeAsc;
+    const label = document.getElementById('label-sort-nome-' + pgmId);
+    if (label) label.textContent = state.nomeAsc ? 'A → Z' : 'Z → A';
+
+    rows.sort((a, b) => {
+      const cmp = a.dataset.nome.localeCompare(b.dataset.nome, 'pt-BR');
+      return state.nomeAsc ? cmp : -cmp;
+    });
+  } else if (col === 'saldo') {
+    rows.sort((a, b) => {
+      return parseInt(b.dataset.saldo || '0', 10) - parseInt(a.dataset.saldo || '0', 10);
+    });
+  }
+
+  rows.forEach(r => tbody.appendChild(r));
 }
 
 // Fecha edição com ESC

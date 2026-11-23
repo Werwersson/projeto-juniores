@@ -24,107 +24,204 @@
         </div>
       </div>
       <div class="col-6 col-md-3">
-        <div class="tk-stat tk-stat-green">
-          <div class="tk-stat-label">Do checklist</div>
-          <div class="tk-stat-value">{{ checklist_logs | sum(attribute='premiles_awarded') }}</div>
-          <div class="tk-stat-sub">em {{ checklist_logs | length }} registro{{ 's' if checklist_logs | length != 1 }}</div>
+        <div class="tk-stat tk-stat-purple">
+          <div class="tk-stat-label">Líderes e Admin</div>
+          <div class="tk-stat-value">{{ total_lider_admin_pts }}</div>
+          <div class="tk-stat-sub">em {{ count_lider_admin }} lançamento{{ 's' if count_lider_admin != 1 }}</div>
         </div>
       </div>
       <div class="col-6 col-md-3">
-        <div class="tk-stat tk-stat-purple">
-          <div class="tk-stat-label">Do líder</div>
-          <div class="tk-stat-value">{{ manual_logs | sum(attribute='premiles_awarded') }}</div>
-          <div class="tk-stat-sub">em {{ manual_logs | length }} lançamento{{ 's' if manual_logs | length != 1 }}</div>
+        <div class="tk-stat tk-stat-green">
+          <div class="tk-stat-label">Meu checklist</div>
+          <div class="tk-stat-value">{{ total_checklist_pts }}</div>
+          <div class="tk-stat-sub">em {{ count_checklist }} registro{{ 's' if count_checklist != 1 }}</div>
         </div>
       </div>
       <div class="col-6 col-md-3">
         <div class="tk-stat tk-stat-cyan">
           <div class="tk-stat-label">Total de registros</div>
-          <div class="tk-stat-value">{{ (checklist_logs | length) + (manual_logs | length) }}</div>
+          <div class="tk-stat-value">{{ itens_extrato | length }}</div>
           <div class="tk-stat-sub">atividades registradas</div>
         </div>
       </div>
     </div>
   </div>
 
-  {# Lista unificada de registros #}
+  {# Lista unificada de registros com filtros e ordenação #}
   <div class="col-12 col-lg-8">
+
+    {# Barra de filtros e organização #}
+    <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:16px; flex-wrap:wrap;">
+      {# Filtros de categoria #}
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <button class="tk-btn tk-btn-ghost tk-btn-sm filtro-btn active" data-tipo="todos">
+          Todos ({{ itens_extrato | length }})
+        </button>
+        <button class="tk-btn tk-btn-ghost tk-btn-sm filtro-btn" data-tipo="lider-admin">
+          <i class="bi bi-person-badge-fill"></i> Líderes e Admin ({{ count_lider_admin }})
+        </button>
+        <button class="tk-btn tk-btn-ghost tk-btn-sm filtro-btn" data-tipo="checklist">
+          <i class="bi bi-check2-circle"></i> Meu checklist ({{ count_checklist }})
+        </button>
+      </div>
+
+      {# Controle de ordenação alfabética / data #}
+      <div style="display:flex; align-items:center; gap:8px;">
+        <label for="ordem-extrato" style="font-size:0.75rem; color:var(--text-muted); font-weight:700; white-space:nowrap;">
+          <i class="bi bi-sort-down"></i> Organizar:
+        </label>
+        <select id="ordem-extrato" class="tk-input" style="padding:4px 10px; font-size:0.8rem; width:auto; font-weight:700; cursor:pointer;">
+          <option value="data-desc">🕒 Mais recentes</option>
+          <option value="data-asc">🕒 Mais antigos</option>
+          <option value="nome-asc">🔤 Ordem alfabética (A → Z)</option>
+          <option value="nome-desc">🔤 Ordem alfabética (Z → A)</option>
+          <option value="pontos-desc">⭐ Maior pontuação</option>
+        </select>
+      </div>
+    </div>
+
     <div class="tk-card">
-      <div style="font-size:0.72rem; font-weight:800; letter-spacing:1px; text-transform:uppercase; color:var(--text-muted); margin-bottom:20px;">
-        Histórico detalhado
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <div style="font-size:0.72rem; font-weight:800; letter-spacing:1px; text-transform:uppercase; color:var(--text-muted);">
+          Histórico detalhado
+        </div>
+        <div id="extrato-contador" style="font-size:0.75rem; color:var(--text-muted); font-weight:600;">
+          {{ itens_extrato | length }} registro{{ 's' if (itens_extrato | length) != 1 }}
+        </div>
       </div>
 
-      {# Checklist logs #}
-      {% for log in checklist_logs %}
-      <div class="tk-extrato-item">
-        <div class="tk-extrato-icon" style="background:rgba(16,185,129,0.15);">
-          {% if log.credited_by %}🔧{% else %}✅{% endif %}
-        </div>
-        <div style="flex:1;">
-          <div style="font-weight:700; font-size:0.88rem;">
-            {{ log.activity_type.name }}
-          </div>
-          <div style="font-size:0.75rem; color:var(--text-muted); font-weight:600; margin-top:2px;">
-            {{ log.activity_date.strftime('%d/%m/%Y') }}
-            {% if log.credited_by %}
-              · Creditado pelo líder
+      {# Linhas unificadas cronológicas e ordenáveis #}
+      <div id="lista-extrato">
+        {% for item in itens_extrato %}
+        <div class="tk-extrato-item extrato-item"
+             data-tipo="{{ 'lider-admin' if item.is_lider_admin else 'checklist' }}"
+             data-nome="{{ item.activity_name | lower }}"
+             data-data="{{ item.sort_dt.isoformat() if item.sort_dt else '' }}"
+             data-premiles="{{ item.premiles }}">
+          
+          {# Ícone visual #}
+          {% if item.tipo == 'manual' %}
+            {% if item.is_admin %}
+              <div class="tk-extrato-icon" style="background:rgba(124,58,237,0.18); color:#a78bfa;" title="Lançamento feito por Administrador">
+                <i class="bi bi-star-fill"></i>
+              </div>
             {% else %}
-              · Marcado por você
+              <div class="tk-extrato-icon" style="background:rgba(6,182,212,0.18); color:#67e8f9;" title="Lançamento feito por Líder">
+                <i class="bi bi-star-fill"></i>
+              </div>
             {% endif %}
-          </div>
-        </div>
-        <div class="tk-extrato-pts">+{{ log.premiles_awarded }}</div>
-      </div>
-      {% endfor %}
+          {% elif item.tipo == 'retroativo' %}
+            <div class="tk-extrato-icon" style="background:rgba(249,115,22,0.18); color:#fb923c;" title="Crédito retroativo lançado por {{ item.autor_role }}">
+              <i class="bi bi-clock-history"></i>
+            </div>
+          {% else %}
+            <div class="tk-extrato-icon" style="background:rgba(16,185,129,0.18); color:#6ee7b7;" title="Marcado no seu checklist">
+              <i class="bi bi-check-lg"></i>
+            </div>
+          {% endif %}
 
-      {# Manual logs #}
-      {% for log in manual_logs %}
-      <div class="tk-extrato-item">
-        <div class="tk-extrato-icon" style="background:rgba(124,58,237,0.15);">⭐</div>
-        <div style="flex:1;">
-          <div style="font-weight:700; font-size:0.88rem;">
-            {{ log.activity_type.name }}
-          </div>
-          <div style="font-size:0.75rem; color:var(--text-muted); font-weight:600; margin-top:2px;">
-            {{ log.activity_date.strftime('%d/%m/%Y') }}
-            · Lançado por {{ log.launcher.name }}
-            {% if log.notes %} · <em>{{ log.notes }}</em>{% endif %}
-          </div>
-        </div>
-        <div class="tk-extrato-pts">+{{ log.premiles_awarded }}</div>
-      </div>
-      {% endfor %}
+          {# Informações principais #}
+          <div style="flex:1; min-width:0;">
+            <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+              <span style="font-weight:700; font-size:0.9rem;">
+                {{ item.activity_name }}
+              </span>
+              <span class="tk-badge {{ item.badge_class }}" style="font-size:0.65rem;">
+                {{ item.badge_text }}
+              </span>
+            </div>
 
-      {% if not checklist_logs and not manual_logs %}
-      <div style="text-align:center; padding:40px; color:var(--text-muted); font-weight:600;">
-        <i class="bi bi-receipt" style="font-size:2rem; display:block; margin-bottom:10px;"></i>
-        Nenhum Premile registrado ainda.<br>
-        <span style="font-size:0.82rem;">Complete seu checklist diário para começar!</span>
+            <div style="font-size:0.76rem; color:var(--text-muted); font-weight:600; margin-top:4px; display:flex; gap:12px; flex-wrap:wrap; align-items:center;">
+              <span>
+                <i class="bi bi-calendar-event"></i> Atividade: {{ item.activity_date.strftime('%d/%m/%Y') }}
+              </span>
+
+              {% if item.is_lider_admin %}
+                <span style="color:var(--text-soft); font-weight:700;">
+                  <i class="bi bi-person-badge-fill"></i> {{ item.origem_texto }} ({{ item.autor_role }})
+                </span>
+                {% if item.created_at %}
+                <span style="opacity:0.75;" title="Data do lançamento">
+                  <i class="bi bi-clock-history"></i> Lançado em: {{ item.created_at.strftime('%d/%m/%Y às %H:%M') }}
+                </span>
+                {% endif %}
+              {% else %}
+                <span>
+                  <i class="bi bi-person-check-fill"></i> Marcado por você
+                </span>
+              {% endif %}
+
+              {% if item.notes %}
+                <span style="color:#fde047; background:rgba(253,224,71,0.08); padding:1px 6px; border-radius:4px;">
+                  <i class="bi bi-chat-left-quote-fill"></i> {{ item.notes }}
+                </span>
+              {% endif %}
+
+              {% if item.summary_status == 'aprovado' %}
+                <span style="color:#6ee7b7;">
+                  <i class="bi bi-check-circle-fill"></i> Resumo aprovado por {{ item.validator_name }} ({{ item.validator_role }})
+                </span>
+              {% elif item.summary_status == 'rejeitado' %}
+                <span style="color:#f87171;">
+                  <i class="bi bi-exclamation-circle-fill"></i> Resumo recusado por {{ item.validator_name }}: "{{ item.validator_note }}"
+                </span>
+              {% elif item.summary_status == 'pendente' %}
+                <span style="color:#fbbf24;">
+                  <i class="bi bi-hourglass-split"></i> Resumo aguardando validação
+                </span>
+              {% endif %}
+            </div>
+          </div>
+
+          {# Premiles ganhos #}
+          <div class="tk-extrato-pts">+{{ item.premiles }}</div>
+
+        </div>
+        {% endfor %}
       </div>
-      {% endif %}
+
+      {# Mensagem de extrato vazio #}
+      <div id="extrato-vazio" style="{% if itens_extrato %}display:none;{% endif %} text-align:center; padding:48px 20px; color:var(--text-muted); font-weight:600;">
+        <i class="bi bi-receipt" style="font-size:2rem; display:block; margin-bottom:12px;"></i>
+        <div id="extrato-vazio-msg">
+          Nenhum Premile registrado ainda.<br>
+          <span style="font-size:0.82rem;">Complete seu checklist diário ou participe das atividades do seu PGM para começar!</span>
+        </div>
+      </div>
 
     </div>
   </div>
 
-  {# Dica lateral #}
+  {# Dica e legenda lateral #}
   <div class="col-12 col-lg-4">
     <div class="tk-card" style="border-color:rgba(249,115,22,0.25);">
       <div style="font-size:1.5rem; margin-bottom:10px;">🏆</div>
       <div style="font-weight:800; font-size:0.95rem; margin-bottom:8px;">
-        Como usar seus Premiles?
+        Como você ganha Premiles?
       </div>
       <p style="color:var(--text-muted); font-size:0.82rem; font-weight:600; line-height:1.7;">
-        Acumule o máximo de Premiles participando das atividades do seu PGM e do checklist diário.
-        No final do período, seu saldo será trocado por prêmios incríveis!
+        Você acumula Premiles marcando seu checklist diário e também quando seus <strong>Líderes</strong> e <strong>Administradores</strong> lançam atividades de presença, bíblia, pontualidade e dinâmicas sobre você!
       </p>
       <div style="background:var(--bg-card2); border-radius:var(--radius-sm); padding:14px; margin-top:8px;">
-        <div style="font-size:0.72rem; font-weight:800; letter-spacing:1px; text-transform:uppercase; color:var(--text-muted); margin-bottom:8px;">
-          Legenda
+        <div style="font-size:0.72rem; font-weight:800; letter-spacing:1px; text-transform:uppercase; color:var(--text-muted); margin-bottom:10px;">
+          Legenda das origens
         </div>
-        <div style="font-size:0.8rem; font-weight:600; color:var(--text-soft); line-height:2;">
-          ✅ Marcado por você<br>
-          🔧 Creditado pelo líder<br>
-          ⭐ Atividade do PGM
+        <div style="display:flex; flex-direction:column; gap:10px; font-size:0.8rem; font-weight:600; color:var(--text-soft);">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span class="tk-badge tk-badge-supervisor" style="font-size:0.65rem;">ADMIN</span>
+            <span>Lançado por um Administrador</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span class="tk-badge tk-badge-lider" style="font-size:0.65rem;">LÍDER</span>
+            <span>Lançado pelo Líder do seu PGM</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span class="tk-badge tk-badge-junior" style="font-size:0.65rem;">CHECKLIST</span>
+            <span>Marcado por você no dia a dia</span>
+          </div>
+          <div style="font-size:0.75rem; color:var(--text-muted); border-top:1px solid var(--border); padding-top:8px; margin-top:2px; line-height:1.4;">
+            <i class="bi bi-clock-history" style="color:#fb923c;"></i> <strong>Retroativo:</strong> Atividade do checklist creditada por um líder ou admin caso você tenha esquecido de marcar.
+          </div>
         </div>
       </div>
     </div>
@@ -132,4 +229,78 @@
 
 </div>
 
+{% endblock %}
+
+{% block scripts %}
+<script nonce="{{ csp_nonce }}">
+// Filtro por categoria (Todos, Líderes e Admin, Checklist)
+let tipoAtual = 'todos';
+
+function atualizarExtrato() {
+  let visiveis = 0;
+  document.querySelectorAll('.extrato-item').forEach(item => {
+    const match = (tipoAtual === 'todos' || item.dataset.tipo === tipoAtual);
+    item.style.display = match ? 'flex' : 'none';
+    if (match) visiveis++;
+  });
+
+  const contador = document.getElementById('extrato-contador');
+  if (contador) {
+    contador.textContent = visiveis + ' registro' + (visiveis !== 1 ? 's' : '');
+  }
+
+  const emptyBox = document.getElementById('extrato-vazio');
+  const emptyMsg = document.getElementById('extrato-vazio-msg');
+  if (emptyBox && emptyMsg) {
+    if (visiveis === 0) {
+      emptyBox.style.display = 'block';
+      if (tipoAtual === 'lider-admin') {
+        emptyMsg.innerHTML = 'Nenhum lançamento de líder ou admin foi feito para você ainda.<br><span style="font-size:0.82rem;">Assim que um líder ou admin creditar pontos para você, eles aparecerão aqui!</span>';
+      } else if (tipoAtual === 'checklist') {
+        emptyMsg.innerHTML = 'Nenhuma atividade de checklist marcada ainda.<br><span style="font-size:0.82rem;">Acesse o menu Checklist para marcar suas tarefas de hoje!</span>';
+      } else {
+        emptyMsg.innerHTML = 'Nenhum Premile registrado ainda.<br><span style="font-size:0.82rem;">Complete seu checklist diário ou participe das atividades para começar!</span>';
+      }
+    } else {
+      emptyBox.style.display = 'none';
+    }
+  }
+}
+
+document.querySelectorAll('.filtro-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.filtro-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    tipoAtual = btn.dataset.tipo;
+    atualizarExtrato();
+  });
+});
+
+// Ordenação (Alfabética A-Z / Z-A, Data, Pontuação)
+const ordemSelect = document.getElementById('ordem-extrato');
+if (ordemSelect) {
+  ordemSelect.addEventListener('change', () => {
+    const criterio = ordemSelect.value;
+    const container = document.getElementById('lista-extrato');
+    const items = Array.from(container.querySelectorAll('.extrato-item'));
+
+    items.sort((a, b) => {
+      if (criterio === 'nome-asc') {
+        return a.dataset.nome.localeCompare(b.dataset.nome, 'pt-BR');
+      } else if (criterio === 'nome-desc') {
+        return b.dataset.nome.localeCompare(a.dataset.nome, 'pt-BR');
+      } else if (criterio === 'data-asc') {
+        return (a.dataset.data || '').localeCompare(b.dataset.data || '');
+      } else if (criterio === 'pontos-desc') {
+        return parseInt(b.dataset.premiles || '0', 10) - parseInt(a.dataset.premiles || '0', 10);
+      } else { // data-desc
+        return (b.dataset.data || '').localeCompare(a.dataset.data || '');
+      }
+    });
+
+    items.forEach(el => container.appendChild(el));
+    atualizarExtrato();
+  });
+}
+</script>
 {% endblock %}

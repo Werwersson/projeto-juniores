@@ -128,15 +128,27 @@
 
         <div class="mb-3">
           <label class="tk-label">Selecionar juniores</label>
-          <div style="display:flex; gap:8px; margin-bottom:10px;">
-            <button type="button" onclick="marcarTodos(true)"
-                    class="tk-btn tk-btn-ghost tk-btn-sm">
-              <i class="bi bi-check-all"></i> Marcar todos
-            </button>
-            <button type="button" onclick="marcarTodos(false)"
-                    class="tk-btn tk-btn-ghost tk-btn-sm">
-              <i class="bi bi-x"></i> Desmarcar todos
-            </button>
+          <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:10px; flex-wrap:wrap;">
+            <div style="display:flex; gap:6px;">
+              <button type="button" onclick="marcarTodos(true)"
+                      class="tk-btn tk-btn-ghost tk-btn-sm">
+                <i class="bi bi-check-all"></i> Marcar todos
+              </button>
+              <button type="button" onclick="marcarTodos(false)"
+                      class="tk-btn tk-btn-ghost tk-btn-sm">
+                <i class="bi bi-x"></i> Desmarcar todos
+              </button>
+            </div>
+            <div style="display:flex; gap:6px;">
+              <button type="button" onclick="sortLoteJuniors('nome')"
+                      class="tk-btn tk-btn-ghost tk-btn-sm" id="btn-sort-lote-nome" title="Organizar por ordem alfabética">
+                <i class="bi bi-sort-alpha-down"></i> <span id="label-sort-lote">A → Z</span>
+              </button>
+              <button type="button" onclick="sortLoteJuniors('saldo')"
+                      class="tk-btn tk-btn-ghost tk-btn-sm" id="btn-sort-lote-saldo" title="Organizar por Premiles">
+                <i class="bi bi-star-fill"></i> Saldo
+              </button>
+            </div>
           </div>
 
           <div style="display:flex; flex-direction:column; gap:6px; max-height:300px; overflow-y:auto;
@@ -146,6 +158,8 @@
                            border:1px solid var(--border); border-radius:var(--radius-sm);
                            background:var(--bg-card2); cursor:pointer;
                            transition:border-color .18s;"
+                   data-nome="{{ junior.name | lower }}"
+                   data-saldo="{{ junior.balance.total_balance if junior.balance else 0 }}"
                    onmouseover="this.style.borderColor='var(--cyan)'"
                    onmouseout="this.style.borderColor='var(--border)'">
               <input type="checkbox" name="junior_ids" value="{{ junior.id }}"
@@ -305,6 +319,30 @@
     const n = document.querySelectorAll('.junior-check:checked').length;
     document.getElementById('contador-selecionados').textContent =
       n + ' selecionado' + (n !== 1 ? 's' : '');
+  }
+
+  let sortLoteAsc = true;
+  function sortLoteJuniors(criterio) {
+    const container = document.getElementById('lista-juniors');
+    if (!container) return;
+    const labels = Array.from(container.querySelectorAll('label[data-nome]'));
+
+    if (criterio === 'nome') {
+      sortLoteAsc = !sortLoteAsc;
+      const labelEl = document.getElementById('label-sort-lote');
+      if (labelEl) labelEl.textContent = sortLoteAsc ? 'A → Z' : 'Z → A';
+
+      labels.sort((a, b) => {
+        const cmp = a.dataset.nome.localeCompare(b.dataset.nome, 'pt-BR');
+        return sortLoteAsc ? cmp : -cmp;
+      });
+    } else if (criterio === 'saldo') {
+      labels.sort((a, b) => {
+        return parseInt(b.dataset.saldo || '0', 10) - parseInt(a.dataset.saldo || '0', 10);
+      });
+    }
+
+    labels.forEach(l => container.appendChild(l));
   }
 
   document.querySelectorAll('.junior-check').forEach(cb =>

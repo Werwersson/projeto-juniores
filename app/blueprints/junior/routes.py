@@ -7,7 +7,8 @@ from app.models.audit import log as audit_log, LogAction
 from app.models.activity import (ActivityType, ActivitySource, ChecklistLog,
                                   ManualLog, PremilesBalance, SummaryStatus)
 from app import db
-from datetime import date
+from datetime import date, datetime, time
+from sqlalchemy.orm import joinedload
 
 
 @junior_bp.route("/dashboard")
@@ -29,7 +30,7 @@ def checklist():
         db.select(ActivityType).where(
             ActivityType.source == ActivitySource.JUNIOR,
             ActivityType.is_active == True  # noqa: E712
-        )
+        ).order_by(ActivityType.name)
     ).scalars().all()
 
     # Logs de hoje (para saber status de cada atividade)
@@ -135,12 +136,21 @@ def checklist():
 def extrato():
     checklist_logs = db.session.execute(
         db.select(ChecklistLog)
+        .options(
+            joinedload(ChecklistLog.activity_type),
+            joinedload(ChecklistLog.credited_by_user),
+            joinedload(ChecklistLog.validator),
+        )
         .where(ChecklistLog.junior_id == current_user.id)
         .order_by(ChecklistLog.created_at.desc())
     ).scalars().all()
 
     manual_logs = db.session.execute(
         db.select(ManualLog)
+        .options(
+            joinedload(ManualLog.activity_type),
+            joinedload(ManualLog.launcher),
+        )
         .where(ManualLog.junior_id == current_user.id)
         .order_by(ManualLog.created_at.desc())
     ).scalars().all()
@@ -148,8 +158,116 @@ def extrato():
     balance = current_user.balance
     saldo = balance.total_balance if balance else 0
 
+    itens_extrato = []
+
+    for log in manual_logs:
+        launcher = log.launcher
+        is_admin = launcher.is_supervisor if launcher else False
+        role_label = "Admin" if is_admin else "Líder"
+        badge_class = "tk-badge-supervisor" if is_admin else "tk-badge-lider"
+
+        sort_dt = log.created_at or datetime.combine(log.activity_date, time.min)
+
+        itens_extrato.append({
+            "id": f"manual-{log.id}",
+            "tipo": "manual",
+            "is_lider_admin": True,
+            "activity_name": log.activity_type.name if log.activity_type else "Atividade",
+            "premiles": log.premiles_awarded,
+            "activity_date": log.activity_date,
+            "created_at": log.created_at,
+            "sort_dt": sort_dt,
+            "autor_nome": launcher.name if launcher else role_label,
+            "autor_role": role_label,
+            "is_admin": is_admin,
+            "badge_class": badge_class,
+            "badge_text": role_label,
+            "notes": log.notes,
+            "origem_texto": f"Lançado por {launcher.name if launcher else role_label}",
+            "raw_log": log,
+        })
+
+    for log in checklist_logs:
+        is_retroativo = bool(log.credited_by)
+        sort_dt = log.created_at or datetime.combine(log.activity_date, time.min)
+
+        if is_retroativo:
+            credited_user = log.credited_by_user
+            is_admin = credited_user.is_supervisor if credited_user else False
+            role_label = "Admin" if is_admin else "Líder"
+            badge_class = "tk-badge-supervisor" if is_admin else "tk-badge-lider"
+            autor_nome = credited_user.name if credited_user else role_label
+
+            itens_extrato.append({
+                "id": f"check-{log.id}",
+                "tipo": "retroativo",
+                "is_lider_admin": True,
+                "activity_name": log.activity_type.name if log.activity_type else "Checklist",
+                "premiles": log.premiles_awarded,
+                "activity_date": log.activity_date,
+                "created_at": log.created_at,
+                "sort_dt": sort_dt,
+                "autor_nome": autor_nome,
+                "autor_role": role_label,
+                "is_admin": is_admin,
+                "badge_class": badge_class,
+                "badge_text": f"Retroativo · {role_label}",
+                "notes": None,
+                "origem_texto": f"Creditado por {autor_nome}",
+                "raw_log": log,
+            })
+        else:
+            validator = log.validator
+            val_is_admin = validator.is_supervisor if validator else False
+            val_role = "Admin" if val_is_admin else "Líder"
+
+            summary_status_val = (
+                log.summary_status.value
+                if (log.summary_status and hasattr(log.summary_status, 'value'))
+                else log.summary_status
+            )
+
+            itens_extrato.append({
+                "id": f"check-{log.id}",
+                "tipo": "checklist",
+                "is_lider_admin": False,
+                "activity_name": log.activity_type.name if log.activity_type else "Checklist",
+                "premiles": log.premiles_awarded,
+                "activity_date": log.activity_date,
+                "created_at": log.created_at,
+                "sort_dt": sort_dt,
+                "autor_nome": None,
+                "autor_role": None,
+                "is_admin": False,
+                "badge_class": "tk-badge-junior",
+                "badge_text": "Checklist",
+                "notes": None,
+                "origem_texto": "Marcado por você",
+                "summary": log.summary,
+                "summary_status": summary_status_val,
+                "validator_name": validator.name if validator else None,
+                "validator_role": val_role if validator else None,
+                "validator_note": log.validator_note,
+                "raw_log": log,
+            })
+
+    # Ordena cronologicamente decrescente (mais recente primeiro)
+    itens_extrato.sort(key=lambda x: x["sort_dt"], reverse=True)
+
+    # Estatísticas
+    total_lider_admin_pts = sum(item["premiles"] for item in itens_extrato if item["is_lider_admin"])
+    count_lider_admin = sum(1 for item in itens_extrato if item["is_lider_admin"])
+
+    total_checklist_pts = sum(item["premiles"] for item in itens_extrato if not item["is_lider_admin"])
+    count_checklist = sum(1 for item in itens_extrato if not item["is_lider_admin"])
+
     return render_template(
         "junior/extrato.html",
+        itens_extrato=itens_extrato,
+        total_lider_admin_pts=total_lider_admin_pts,
+        count_lider_admin=count_lider_admin,
+        total_checklist_pts=total_checklist_pts,
+        count_checklist=count_checklist,
         checklist_logs=checklist_logs,
         manual_logs=manual_logs,
         saldo=saldo,

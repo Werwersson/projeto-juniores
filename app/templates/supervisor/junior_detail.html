@@ -148,39 +148,80 @@
 
 {# Extrato completo #}
 <div class="tk-card">
-  <div style="font-size:0.72rem; font-weight:800; letter-spacing:1px; text-transform:uppercase; color:var(--text-muted); margin-bottom:20px;">
-    Extrato completo
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px;">
+    <div style="font-size:0.72rem; font-weight:800; letter-spacing:1px; text-transform:uppercase; color:var(--text-muted);">
+      Extrato completo
+    </div>
+
+    {# Ordenação alfabética / data #}
+    <div style="display:flex; align-items:center; gap:8px;">
+      <label for="ordem-detail" style="font-size:0.75rem; color:var(--text-muted); font-weight:700; white-space:nowrap;">
+        <i class="bi bi-sort-down"></i> Organizar:
+      </label>
+      <select id="ordem-detail" class="tk-input" style="padding:4px 10px; font-size:0.8rem; width:auto; font-weight:700; cursor:pointer;">
+        <option value="data-desc">🕒 Mais recentes</option>
+        <option value="data-asc">🕒 Mais antigos</option>
+        <option value="nome-asc">🔤 Ordem alfabética (A → Z)</option>
+        <option value="nome-desc">🔤 Ordem alfabética (Z → A)</option>
+        <option value="pontos-desc">⭐ Maior pontuação</option>
+      </select>
+    </div>
   </div>
 
-  {% for log in junior.checklist_logs %}
-  <div class="tk-extrato-item">
-    <div class="tk-extrato-icon" style="background:rgba(16,185,129,0.15);">
-      {% if log.credited_by %}🔧{% else %}✅{% endif %}
-    </div>
-    <div style="flex:1;">
-      <div style="font-weight:700; font-size:0.88rem;">{{ log.activity_type.name }}</div>
-      <div style="font-size:0.75rem; color:var(--text-muted); font-weight:600; margin-top:2px;">
-        {{ log.activity_date.strftime('%d/%m/%Y') }}
-        {% if log.credited_by %} · Creditado pelo líder{% else %} · Marcado pelo junior{% endif %}
+  <div id="lista-detail-extrato">
+    {% for log in junior.checklist_logs %}
+    <div class="tk-extrato-item detail-extrato-item"
+         data-nome="{{ log.activity_type.name | lower if log.activity_type else '' }}"
+         data-data="{{ (log.created_at or log.activity_date).isoformat() }}"
+         data-premiles="{{ log.premiles_awarded }}">
+      <div class="tk-extrato-icon" style="background:{% if log.credited_by %}rgba(249,115,22,0.15){% else %}rgba(16,185,129,0.15){% endif %};">
+        {% if log.credited_by %}🔧{% else %}✅{% endif %}
       </div>
+      <div style="flex:1;">
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+          <span style="font-weight:700; font-size:0.88rem;">{{ log.activity_type.name }}</span>
+          <span class="tk-badge {% if log.credited_by %}{% if log.credited_by_user and log.credited_by_user.is_supervisor %}tk-badge-supervisor{% else %}tk-badge-lider{% endif %}{% else %}tk-badge-junior{% endif %}" style="font-size:0.65rem;">
+            {% if log.credited_by %}Retroativo · {{ 'Admin' if log.credited_by_user and log.credited_by_user.is_supervisor else 'Líder' }}{% else %}Checklist{% endif %}
+          </span>
+        </div>
+        <div style="font-size:0.75rem; color:var(--text-muted); font-weight:600; margin-top:2px;">
+          {{ log.activity_date.strftime('%d/%m/%Y') }}
+          {% if log.credited_by %}
+            · Creditado por {{ log.credited_by_user.name if log.credited_by_user else 'Líder/Admin' }} ({{ 'Admin' if log.credited_by_user and log.credited_by_user.is_supervisor else 'Líder' }})
+          {% else %}
+            · Marcado pelo junior
+          {% endif %}
+        </div>
+      </div>
+      <div class="tk-extrato-pts">+{{ log.premiles_awarded }}</div>
     </div>
-    <div class="tk-extrato-pts">+{{ log.premiles_awarded }}</div>
-  </div>
-  {% endfor %}
+    {% endfor %}
 
-  {% for log in junior.manual_logs %}
-  <div class="tk-extrato-item">
-    <div class="tk-extrato-icon" style="background:rgba(124,58,237,0.15);">⭐</div>
-    <div style="flex:1;">
-      <div style="font-weight:700; font-size:0.88rem;">{{ log.activity_type.name }}</div>
-      <div style="font-size:0.75rem; color:var(--text-muted); font-weight:600; margin-top:2px;">
-        {{ log.created_at.strftime('%d/%m/%Y') }} · {{ log.launcher.name }}
-        {% if log.notes %} · <em>{{ log.notes }}</em>{% endif %}
+    {% for log in junior.manual_logs %}
+    <div class="tk-extrato-item detail-extrato-item"
+         data-nome="{{ log.activity_type.name | lower if log.activity_type else '' }}"
+         data-data="{{ (log.created_at or log.activity_date).isoformat() }}"
+         data-premiles="{{ log.premiles_awarded }}">
+      <div class="tk-extrato-icon" style="background:{% if log.launcher and log.launcher.is_supervisor %}rgba(124,58,237,0.15){% else %}rgba(6,182,212,0.15){% endif %};">
+        ⭐
       </div>
+      <div style="flex:1;">
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+          <span style="font-weight:700; font-size:0.88rem;">{{ log.activity_type.name }}</span>
+          <span class="tk-badge {% if log.launcher and log.launcher.is_supervisor %}tk-badge-supervisor{% else %}tk-badge-lider{% endif %}" style="font-size:0.65rem;">
+            {{ 'Admin' if log.launcher and log.launcher.is_supervisor else 'Líder' }}
+          </span>
+        </div>
+        <div style="font-size:0.75rem; color:var(--text-muted); font-weight:600; margin-top:2px;">
+          Atividade: {{ log.activity_date.strftime('%d/%m/%Y') if log.activity_date else log.created_at.strftime('%d/%m/%Y') }}
+          · Lançado por {{ log.launcher.name if log.launcher else 'Líder/Admin' }} ({{ 'Admin' if log.launcher and log.launcher.is_supervisor else 'Líder' }})
+          {% if log.notes %} · <em>{{ log.notes }}</em>{% endif %}
+        </div>
+      </div>
+      <div class="tk-extrato-pts">+{{ log.premiles_awarded }}</div>
     </div>
-    <div class="tk-extrato-pts">+{{ log.premiles_awarded }}</div>
+    {% endfor %}
   </div>
-  {% endfor %}
 
   {% if not junior.checklist_logs and not junior.manual_logs %}
   <div style="text-align:center; padding:40px; color:var(--text-muted); font-weight:600;">
@@ -191,4 +232,33 @@
 
 </div>
 
+{% endblock %}
+
+{% block scripts %}
+<script nonce="{{ csp_nonce }}">
+const ordemDetailSelect = document.getElementById('ordem-detail');
+if (ordemDetailSelect) {
+  ordemDetailSelect.addEventListener('change', () => {
+    const criterio = ordemDetailSelect.value;
+    const container = document.getElementById('lista-detail-extrato');
+    const items = Array.from(container.querySelectorAll('.detail-extrato-item'));
+
+    items.sort((a, b) => {
+      if (criterio === 'nome-asc') {
+        return a.dataset.nome.localeCompare(b.dataset.nome, 'pt-BR');
+      } else if (criterio === 'nome-desc') {
+        return b.dataset.nome.localeCompare(a.dataset.nome, 'pt-BR');
+      } else if (criterio === 'data-asc') {
+        return (a.dataset.data || '').localeCompare(b.dataset.data || '');
+      } else if (criterio === 'pontos-desc') {
+        return parseInt(b.dataset.premiles || '0', 10) - parseInt(a.dataset.premiles || '0', 10);
+      } else { // data-desc
+        return (b.dataset.data || '').localeCompare(a.dataset.data || '');
+      }
+    });
+
+    items.forEach(el => container.appendChild(el));
+  });
+}
+</script>
 {% endblock %}
