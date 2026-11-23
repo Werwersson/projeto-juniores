@@ -13,23 +13,39 @@
   </a>
 </div>
 
-{# Filtro rápido por role #}
-<div style="display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap;" id="filtros-role">
-  <button type="button" class="tk-btn tk-btn-ghost tk-btn-sm filtro-btn active" data-role="todos">
-    Todos ({{ usuarios | length }})
-  </button>
-  <button type="button" class="tk-btn tk-btn-ghost tk-btn-sm filtro-btn" data-role="supervisor">
-    <i class="bi bi-shield-fill"></i>
-    Supervisores ({{ usuarios | selectattr('is_supervisor') | list | length }})
-  </button>
-  <button type="button" class="tk-btn tk-btn-ghost tk-btn-sm filtro-btn" data-role="lider">
-    <i class="bi bi-star-fill"></i>
-    Líderes ({{ usuarios | selectattr('is_lider') | list | length }})
-  </button>
-  <button type="button" class="tk-btn tk-btn-ghost tk-btn-sm filtro-btn" data-role="junior">
-    <i class="bi bi-person-fill"></i>
-    Juniores ({{ usuarios | selectattr('is_junior') | list | length }})
-  </button>
+{# Barra superior com filtros e ordenação #}
+<div style="display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:16px; flex-wrap:wrap;">
+  {# Filtro rápido por role #}
+  <div style="display:flex; gap:8px; flex-wrap:wrap;" id="filtros-role">
+    <button type="button" class="tk-btn tk-btn-ghost tk-btn-sm filtro-btn active" data-role="todos">
+      Todos ({{ usuarios | length }})
+    </button>
+    <button type="button" class="tk-btn tk-btn-ghost tk-btn-sm filtro-btn" data-role="supervisor">
+      <i class="bi bi-shield-fill"></i>
+      Supervisores ({{ usuarios | selectattr('is_supervisor') | list | length }})
+    </button>
+    <button type="button" class="tk-btn tk-btn-ghost tk-btn-sm filtro-btn" data-role="lider">
+      <i class="bi bi-star-fill"></i>
+      Líderes ({{ usuarios | selectattr('is_lider') | list | length }})
+    </button>
+    <button type="button" class="tk-btn tk-btn-ghost tk-btn-sm filtro-btn" data-role="junior">
+      <i class="bi bi-person-fill"></i>
+      Juniores ({{ usuarios | selectattr('is_junior') | list | length }})
+    </button>
+  </div>
+
+  {# Controle de ordenação #}
+  <div style="display:flex; align-items:center; gap:8px;">
+    <label for="ordem-usuarios" style="font-size:0.75rem; color:var(--text-muted); font-weight:700; white-space:nowrap;">
+      <i class="bi bi-sort-down"></i> Organizar:
+    </label>
+    <select id="ordem-usuarios" class="tk-input" style="padding:4px 10px; font-size:0.8rem; width:auto; font-weight:700; cursor:pointer;">
+      <option value="papel-nome">👑 Papel primeiro, depois Nome (A → Z)</option>
+      <option value="nome-asc">🔤 Ordem alfabética (A → Z)</option>
+      <option value="nome-desc">🔤 Ordem alfabética (Z → A)</option>
+      <option value="premiles-desc">⭐ Premiles (Maior saldo)</option>
+    </select>
+  </div>
 </div>
 
 {# Campo de pesquisa por nome #}
@@ -44,17 +60,26 @@
   <table class="tk-table" id="tabela-usuarios">
     <thead>
       <tr>
-        <th>Nome</th>
+        <th style="cursor:pointer;" onclick="alternarOrdem('nome')" title="Clique para alternar ordem alfabética">
+          Nome <i class="bi bi-arrow-down-up" style="font-size:0.75rem; opacity:0.6;"></i>
+        </th>
         <th>E-mail</th>
-        <th>Papel</th>
+        <th style="cursor:pointer;" onclick="alternarOrdem('papel')" title="Clique para ordenar por papel primeiro">
+          Papel <i class="bi bi-arrow-down-up" style="font-size:0.75rem; opacity:0.6;"></i>
+        </th>
         <th>PGM / Grupo</th>
-        <th>Premiles</th>
+        <th style="cursor:pointer;" onclick="alternarOrdem('premiles')" title="Clique para ordenar por Premiles">
+          Premiles <i class="bi bi-arrow-down-up" style="font-size:0.75rem; opacity:0.6;"></i>
+        </th>
         <th>Ações</th>
       </tr>
     </thead>
     <tbody>
       {% for u in usuarios %}
-      <tr data-role="{{ u._role_str() }}" data-nome="{{ u.name | lower }}">
+      <tr data-role="{{ u._role_str() }}"
+          data-role-order="{{ 1 if u.is_supervisor else (2 if u.is_lider else 3) }}"
+          data-nome="{{ u.name | lower }}"
+          data-saldo="{{ u.balance.total_balance if (u.is_junior and u.balance) else 0 }}">
         <td>
           <div style="display:flex; align-items:center; gap:10px;">
             <div class="tk-avatar av-{{ u._role_str() }}">{{ u.name[0].upper() }}</div>
@@ -134,8 +159,106 @@
   </div>
 </div>
 
-{# ── Script de filtro/busca (arquivo externo — CSP bloqueia inline) ── #}
-<script src="{{ url_for('static', filename='js/usuarios_filter.js') }}"
-        integrity="sha384-WQ/NM+JWrsMklQQnncpAhSU/KOnLFvXydP5Xh1PMwfhzb8H7L+y31+n5jLQZuxGY"></script>
+{% endblock %}
 
+{% block scripts %}
+<script nonce="{{ csp_nonce }}">
+(function () {
+  var filtroAtivo = 'todos';
+  var tabela      = document.getElementById('tabela-usuarios');
+  var buscaInput  = document.getElementById('busca-usuario');
+  var semRes      = document.getElementById('sem-resultados');
+  var ordemSelect = document.getElementById('ordem-usuarios');
+
+  if (!tabela) return;
+
+  function aplicarFiltros() {
+    var busca    = buscaInput ? buscaInput.value.toLowerCase().trim() : '';
+    var rows     = tabela.querySelectorAll('tbody tr[data-role]');
+    var visiveis = 0;
+
+    for (var i = 0; i < rows.length; i++) {
+      var row     = rows[i];
+      var roleOk  = (filtroAtivo === 'todos' || row.getAttribute('data-role') === filtroAtivo);
+      var nomeOk  = (busca === '' || (row.getAttribute('data-nome') || '').indexOf(busca) !== -1);
+      var mostrar = roleOk && nomeOk;
+      row.style.display = mostrar ? '' : 'none';
+      if (mostrar) visiveis++;
+    }
+
+    if (semRes) semRes.style.display = (visiveis === 0) ? '' : 'none';
+  }
+
+  function ordenarTabela(criterio) {
+    var tbody = tabela.querySelector('tbody');
+    var rows  = Array.from(tbody.querySelectorAll('tr[data-role]'));
+
+    rows.sort(function (a, b) {
+      if (criterio === 'papel-nome') {
+        var rA = parseInt(a.getAttribute('data-role-order') || '9', 10);
+        var rB = parseInt(b.getAttribute('data-role-order') || '9', 10);
+        if (rA !== rB) return rA - rB;
+        return (a.getAttribute('data-nome') || '').localeCompare(b.getAttribute('data-nome') || '', 'pt-BR');
+      } else if (criterio === 'nome-asc') {
+        return (a.getAttribute('data-nome') || '').localeCompare(b.getAttribute('data-nome') || '', 'pt-BR');
+      } else if (criterio === 'nome-desc') {
+        return (b.getAttribute('data-nome') || '').localeCompare(a.getAttribute('data-nome') || '', 'pt-BR');
+      } else if (criterio === 'premiles-desc') {
+        var sA = parseInt(a.getAttribute('data-saldo') || '0', 10);
+        var sB = parseInt(b.getAttribute('data-saldo') || '0', 10);
+        if (sB !== sA) return sB - sA;
+        return (a.getAttribute('data-nome') || '').localeCompare(b.getAttribute('data-nome') || '', 'pt-BR');
+      }
+      return 0;
+    });
+
+    rows.forEach(function (r) { tbody.appendChild(r); });
+    aplicarFiltros();
+  }
+
+  // Filtro por role — clique nos botões
+  var btns = document.querySelectorAll('.filtro-btn');
+  for (var j = 0; j < btns.length; j++) {
+    (function (btn) {
+      btn.addEventListener('click', function (e) {
+        e.preventDefault();
+        for (var k = 0; k < btns.length; k++) btns[k].classList.remove('active');
+        btn.classList.add('active');
+        filtroAtivo = btn.getAttribute('data-role');
+        aplicarFiltros();
+      });
+    })(btns[j]);
+  }
+
+  // Busca por nome — digitar no input
+  if (buscaInput) {
+    buscaInput.addEventListener('input', function () {
+      aplicarFiltros();
+    });
+  }
+
+  // Mudança no select de ordenação
+  if (ordemSelect) {
+    ordemSelect.addEventListener('change', function () {
+      ordenarTabela(ordemSelect.value);
+    });
+  }
+
+  var sortNomeAsc = true;
+  window.alternarOrdem = function (col) {
+    if (col === 'nome') {
+      var novoCriterio = sortNomeAsc ? 'nome-asc' : 'nome-desc';
+      sortNomeAsc = !sortNomeAsc;
+      if (ordemSelect) ordemSelect.value = novoCriterio;
+      ordenarTabela(novoCriterio);
+    } else if (col === 'papel') {
+      if (ordemSelect) ordemSelect.value = 'papel-nome';
+      ordenarTabela('papel-nome');
+    } else if (col === 'premiles') {
+      if (ordemSelect) ordemSelect.value = 'premiles-desc';
+      ordenarTabela('premiles-desc');
+    }
+  };
+})();
+</script>
 {% endblock %}

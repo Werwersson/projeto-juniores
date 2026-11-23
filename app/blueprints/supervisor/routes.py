@@ -87,9 +87,29 @@ def renomear_pgm(pgm_id):
 @login_required
 @requires_role(UserRole.SUPERVISOR)
 def usuarios():
-    todos = db.session.execute(
-        db.select(User).order_by(User.role, User.name)
-    ).scalars().all()
+    from sqlalchemy import case
+
+    role_order = case(
+        (User.role == UserRole.SUPERVISOR, 1),
+        (User.role == UserRole.LIDER, 2),
+        (User.role == UserRole.JUNIOR, 3),
+        else_=4
+    )
+    todos = list(db.session.execute(
+        db.select(User).order_by(role_order, db.func.lower(User.name))
+    ).scalars().all())
+
+    # Garante a ordenação por papel primeiro e depois por nome em ordem alfabética
+    ROLE_WEIGHTS = {
+        UserRole.SUPERVISOR: 1,
+        "supervisor": 1,
+        UserRole.LIDER: 2,
+        "lider": 2,
+        UserRole.JUNIOR: 3,
+        "junior": 3,
+    }
+    todos.sort(key=lambda u: (ROLE_WEIGHTS.get(u.role, 4), u.name.lower()))
+
     pgms = db.session.execute(db.select(PGM).order_by(PGM.name)).scalars().all()
     return render_template("supervisor/usuarios.html", usuarios=todos, pgms=pgms)
 
